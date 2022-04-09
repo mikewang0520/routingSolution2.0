@@ -1,0 +1,20 @@
+============
+O - TODO
+X - FINISHED
+============
+
+======
+FOR US
+======
+ O - Change execution input format
+ ? - Generate initial solution (reordered pins tho!)
+ O - Termination condition (terminate program if exceeds 15 minutes)
+ O - Read in edge capacities (store in array? -> index = edgeID, value = capacity)
+
+============
+OFFICE HOURS
+============
+ O - RRR algorithm (how is this done)
+   O - Edge weight calculation
+   O - Net ordering
+   O - Maze routing
