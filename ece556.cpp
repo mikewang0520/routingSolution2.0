@@ -142,7 +142,17 @@ int readBenchmark(const char *fileName, routingInst *rst){
   // calculate and store numEdges
   rst->numEdges = ((rst->gy) * ((rst->gx)-1)) + ((rst->gx) * ((rst->gy)-1));
 
-  // BLOCKAGE READING GOES HERE (???)
+  // allocate space for edgeCaps, edgeUtils, and edgeHistories
+  rst->edgeCaps = (int*) malloc(rst->numEdges * sizeof(int));
+  rst->edgeUtils = (int*) malloc(rst->numEdges * sizeof(int));
+  rst->edgeHistories = (int*) malloc(rst->numEdges * sizeof(int));
+
+  // BLOCKAGE READING GOES HERE
+  // numBlockages
+  // p1x p1y p2x p2y newCap
+  // p1x p1y p2x p2y newCap
+  // ...
+  
   
   // clean up and return
   //myfile.close();
@@ -319,7 +329,7 @@ int release(routingInst *rst){
 
     // for each segment
     for (int j=0; j<rst->nets[i].nroute.numSegs; ++j) {
-      // free edges
+      // free each edge
       free(rst->nets[i].nroute.segments[j].edges);
     }
 
@@ -331,9 +341,13 @@ int release(routingInst *rst){
   free(rst->nets);
 
   // free edgeCaps and edgeUtils
-  // TODO
+  free(rst->edgeCaps);
+  free(rst->edgeUtils);
+
+  // free edgeHistories
+  free(rst->edgeHistories);
   
-  // release the routing instance itself
+  // free the routing instance itself
   free(rst);
 
   return 1; // success!

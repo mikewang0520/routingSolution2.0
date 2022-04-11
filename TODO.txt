@@ -3,9 +3,17 @@ O - TODO
 X - FINISHED
 ============
 
+=====
+NOTES
+=====
+ - We can add fields to the structs if we think that's useful
+   - Each *net* has a weight
+ - int *edgeHistories added to routingInstance struct
+
 ======
 FOR US
 ======
+ O - KEEP CURRENT SOLVING ALGORITHM (to generate initial solution)
  O - Change execution input format
  ? - Generate initial solution (reordered pins tho!) (do we route between corners/pins ONLY, or from any point on newest segment??)
  O - Termination condition (terminate program if exceeds 15 minutes)
@@ -14,7 +22,7 @@ FOR US
 ============
 OFFICE HOURS
 ============
- O - RRR algorithm (how is this done)
-   O - Edge weight calculation
-   O - Net ordering
-   O - Maze routing
+ O - RRR algorithm (how is this done?)
+   O - Edge weight calculation (edge "priority" -> reroute if weight positive (utilization - capacity))
+   O - Net ordering (RRR the nets in the order from highests "priority" to loewst
+   O - Maze routing (
