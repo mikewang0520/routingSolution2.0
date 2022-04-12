@@ -144,15 +144,80 @@ int readBenchmark(const char *fileName, routingInst *rst){
 
   // allocate space for edgeCaps, edgeUtils, and edgeHistories
   rst->edgeCaps = (int*) malloc(rst->numEdges * sizeof(int));
-  rst->edgeUtils = (int*) malloc(rst->numEdges * sizeof(int));
-  rst->edgeHistories = (int*) malloc(rst->numEdges * sizeof(int));
+  memset(rst->edgeCaps, rst->cap, rst->numEdges); // fill default capacities
+  rst->edgeUtils = (int*) calloc(rst->numEdges, sizeof(int));
+  rst->edgeHistories = (int*) calloc(rst->numEdges, sizeof(int));
 
   // BLOCKAGE READING GOES HERE
   // numBlockages
   // p1x p1y p2x p2y newCap
   // p1x p1y p2x p2y newCap
   // ...
-  
+
+  // get number of blockages
+  getline(myfile, line); // read line
+  linestream.str(line);
+  getline(linestream, item, ' '); // token 0 (numBlockages)
+  int numBlockages = stoi(item);
+  linestream.str("");
+  linestream.clear();
+
+  for (int i=0; i<numBlockages; ++i) {
+    // define two points
+    point p1;
+    point p2;
+    
+    // read line
+    getline(myfile, line); // read line
+    linestream.str(line);
+    
+    // read p1
+    getline(linestream, item, ' '); // token 0 (p1x)
+    p1.x = stoi(item);
+    getline(linestream, item, ' '); // token 1 (p1y)
+    p1.y = stoi(item);
+
+    // read p2
+    getline(linestream, item, ' '); // token 2 (p2x)
+    p2.x = stoi(item);
+    getline(linestream, item, ' '); // token 3 (p2y)
+    p2.y = stoi(item);
+
+    // determine which edge lies between p1 and p2
+    int edgeID = -1;
+
+    // if edge is vertical
+    if (p1.x == p2.x) {
+      // p1 is "before" p2
+      if (p1.y < p2.y) {
+	edgeID = getEdgeID(rst, p1, p2);
+      }
+      // p1 is "after" p2
+      else {
+	edgeID = getEdgeID(rst, p2, p1);
+      }
+    }
+    // else edge is horizontal
+    else {
+      // p1 is "before" p2
+      if (p1.x < p2.x) {
+        edgeID = getEdgeID(rst, p1, p2);
+      }
+      // p1 is "after" p2
+      else {
+        edgeID = getEdgeID(rst, p2, p1);
+      }
+    }
+
+    // update capacity of determined edge
+    getline(linestream, item, ' '); // token 4 (newCap)
+    int newCap = stoi(item);
+    rst->edgeCaps[edgeID] = newCap;
+
+    // get ready to read next line
+    linestream.str("");
+    linestream.clear();
+  }
   
   // clean up and return
   //myfile.close();
