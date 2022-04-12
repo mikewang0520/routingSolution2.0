@@ -10,15 +10,36 @@
 using namespace std;
 
 int getEdgeID(routingInst *rst, point p1, point p2) {
-  int x1 = p1.x;
-  int y1 = p1.y;
-  int x2 = p2.x;
-  int y2 = p2.y;
+  int x1;
+  int y1;
+  int x2;
+  int y2;
   int gx = rst->gx;
   int gy = rst->gy;
 
-  // if edge is horizontal
-  if (y1 == y2) {
+  // assign point values such that p1 is "before" p2
+  if (p2.x < p1.x || p2.y < p1.y) {
+    // points were passed backwards
+    x1 = p2.x;
+    y1 = p2.y;
+    x2 = p1.x;
+    y2 = p1.y;
+  }
+  else {
+    // points were passed properly
+    x1 = p1.x;
+    y1 = p1.y;
+    x2 = p2.x;
+    y2 = p2.y;
+  }
+  
+  // ensure not the same point...
+  if (x1 == x2 && y1 == y2) {
+    cout << "getEdgeID: SAME POINT ERROR!" << endl;
+    return -1;
+  }
+  // else if edge is horizontal
+  else if (y1 == y2) {
     return y2*(gx-1)+x2-1;
   }
   // else if edge is vertical
@@ -27,7 +48,7 @@ int getEdgeID(routingInst *rst, point p1, point p2) {
   }
   // else not an edge
   else {
-    cout << "NOT AN EDGE!" << endl;
+    cout << "getEdgeID: NOT AN EDGE!" << endl;
     return -1;
   }
 
@@ -185,30 +206,8 @@ int readBenchmark(const char *fileName, routingInst *rst){
 
     // determine which edge lies between p1 and p2
     int edgeID = -1;
-
-    // if edge is vertical
-    if (p1.x == p2.x) {
-      // p1 is "before" p2
-      if (p1.y < p2.y) {
-	edgeID = getEdgeID(rst, p1, p2);
-      }
-      // p1 is "after" p2
-      else {
-	edgeID = getEdgeID(rst, p2, p1);
-      }
-    }
-    // else edge is horizontal
-    else {
-      // p1 is "before" p2
-      if (p1.x < p2.x) {
-        edgeID = getEdgeID(rst, p1, p2);
-      }
-      // p1 is "after" p2
-      else {
-        edgeID = getEdgeID(rst, p2, p1);
-      }
-    }
-
+    edgeID = getEdgeID(rst, p1, p2);
+    
     // update capacity of determined edge
     getline(linestream, item, ' '); // token 4 (newCap)
     int newCap = stoi(item);
@@ -290,8 +289,7 @@ int solveRouting(routingInst *rst)
       
       // pins have vertical gap
       for (int k = 0; k < ygap; ++k) {
-	// add horizontal edge to segment
-	 // add horizontal edge to segment
+	// add vertical edge to segment
         point currPoint;
         point nextPoint;
 
@@ -336,19 +334,11 @@ int writeOutput(const char *outRouteFile, routingInst *rst)
   // write net segments to fileOut
   for (int i = 0; i < rst->numNets; ++i) // enumerates through nets
   {
-    /*
-    char *string = (char*) malloc(1000 * sizeof(char));
-    if (!string) {
-      fputs ("ERR: memory allocation for string failed", stderr);
-      exit (EXIT_FAILURE);
-    }
-    */
-
     fileOut << "n" << rst->nets[i].id << endl;
     
     for (int j = 0; j < rst->nets[i].nroute.numSegs; ++j) {
       // iterates through endpoints of routes
-
+      
       for (int k = 0; k < rst->nets[i].nroute.segments[j].numEdges; ++k) {
 	point p1;
 	point p2;
@@ -362,7 +352,7 @@ int writeOutput(const char *outRouteFile, routingInst *rst)
 	   p2.y << ")" << endl;
       }
     }
-
+    
     fileOut << "!" << endl;
   }
   
@@ -379,9 +369,6 @@ int writeOutput(const char *outRouteFile, routingInst *rst)
  * nets, then the fields in a routing instance, and finally
  * the routing instance) 
  */
-
-// Release memory used
-// NOTE: do these need to be in for loops?
 int release(routingInst *rst){
   /*********** TO BE FILLED BY YOU **********/
   if (!rst) return 0; // failure if rst is NULL
