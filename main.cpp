@@ -5,7 +5,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-#define DEBUG 0
+#define DEBUG 1
 #define ASCII_ZERO 48
 
 // CITED RESOURCES:
@@ -54,10 +54,10 @@ main(int argc, char **argv)
   char *inputFileName = argv[argc-2];
   char *outputFileName = argv[argc-1];
   
-  /// create a new routing instance
+  // create a new routing instance
   routingInst *rst = new routingInst;
   
-  /// read benchmark
+  // read benchmark
   status = readBenchmark(inputFileName, rst);
   if(status==0){
     printf("ERROR: reading input file \n");
@@ -71,11 +71,16 @@ main(int argc, char **argv)
     release(rst);
     return 1;
   }
-
+  
   // perform RRR
   if (useNetD !=0 || useNetO != 0) {
-    status = RRR(rst, useNetD, useNetO);
-    if (status == 0) {
+    status = -1;
+    
+    do {
+      status = RRR(rst, useNetD, useNetO);
+    } while (status != 0);
+    
+    if (status == -1) {
       printf("ERROR: running RRR");
       release(rst);
       return 1;

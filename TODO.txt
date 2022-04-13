@@ -13,6 +13,7 @@ NOTES
 ======
 FOR US
 ======
+ O - RRR should return total cost value -> loop RRR() call from main while RRR() does not return 0 OR returns -1 (15 minute threshold)
  O - KEEP CURRENT SOLVING ALGORITHM (to generate initial solution)
  X - Change execution input format
  ? - Generate initial solution (reordered pins tho?) (do we route between corners/pins ONLY, or from any point on newest segment??)
