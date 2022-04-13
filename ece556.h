@@ -138,9 +138,13 @@ int* getNetOrder(routingInst *rst);
 
 
 /* void decomp(routingInst *rst, int *netOrder)
-   Net decomposition given an ORDERED netlist
+   Net decomposition given an ORDERED netlist.
+
+   input1: pointer to the routing instance
+   input2: pointer to an ORDERED netlist
+   output: doesn't return anything - rather, directy updates the nets and their routes in rst
 */
-void decomp(routingInst *rst);
+void decomp(routingInst *rst, int *netOrder);
 
 /* int RRR(routingInst *rst, int useNetD, int useNetO)
    Performs one iteration of "Rip-up and ReRoute".
