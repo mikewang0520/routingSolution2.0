@@ -10,15 +10,36 @@
 using namespace std;
 
 int getEdgeID(routingInst *rst, point p1, point p2) {
-  int x1 = p1.x;
-  int y1 = p1.y;
-  int x2 = p2.x;
-  int y2 = p2.y;
+  int x1;
+  int y1;
+  int x2;
+  int y2;
   int gx = rst->gx;
   int gy = rst->gy;
 
-  // if edge is horizontal
-  if (y1 == y2) {
+  // assign point values such that p1 is "before" p2
+  if (p2.x < p1.x || p2.y < p1.y) {
+    // points were passed backwards
+    x1 = p2.x;
+    y1 = p2.y;
+    x2 = p1.x;
+    y2 = p1.y;
+  }
+  else {
+    // points were passed properly
+    x1 = p1.x;
+    y1 = p1.y;
+    x2 = p2.x;
+    y2 = p2.y;
+  }
+  
+  // ensure not the same point...
+  if (x1 == x2 && y1 == y2) {
+    cout << "getEdgeID: SAME POINT ERROR!" << endl;
+    return -1;
+  }
+  // else if edge is horizontal
+  else if (y1 == y2) {
     return y2*(gx-1)+x2-1;
   }
   // else if edge is vertical
@@ -27,7 +48,7 @@ int getEdgeID(routingInst *rst, point p1, point p2) {
   }
   // else not an edge
   else {
-    cout << "NOT AN EDGE!" << endl;
+    cout << "getEdgeID: NOT AN EDGE!" << endl;
     return -1;
   }
 
@@ -142,7 +163,60 @@ int readBenchmark(const char *fileName, routingInst *rst){
   // calculate and store numEdges
   rst->numEdges = ((rst->gy) * ((rst->gx)-1)) + ((rst->gx) * ((rst->gy)-1));
 
-  // BLOCKAGE READING GOES HERE (???)
+  // allocate space for edgeCaps, edgeUtils, and edgeHistories
+  rst->edgeCaps = (int*) malloc(rst->numEdges * sizeof(int));
+  memset(rst->edgeCaps, rst->cap, rst->numEdges); // fill default capacities
+  rst->edgeUtils = (int*) calloc(rst->numEdges, sizeof(int));
+  rst->edgeHistories = (int*) calloc(rst->numEdges, sizeof(int));
+
+  // BLOCKAGE READING GOES HERE
+  // numBlockages
+  // p1x p1y p2x p2y newCap
+  // p1x p1y p2x p2y newCap
+  // ...
+
+  // get number of blockages
+  getline(myfile, line); // read line
+  linestream.str(line);
+  getline(linestream, item, ' '); // token 0 (numBlockages)
+  int numBlockages = stoi(item);
+  linestream.str("");
+  linestream.clear();
+
+  for (int i=0; i<numBlockages; ++i) {
+    // define two points
+    point p1;
+    point p2;
+    
+    // read line
+    getline(myfile, line); // read line
+    linestream.str(line);
+    
+    // read p1
+    getline(linestream, item, ' '); // token 0 (p1x)
+    p1.x = stoi(item);
+    getline(linestream, item, ' '); // token 1 (p1y)
+    p1.y = stoi(item);
+
+    // read p2
+    getline(linestream, item, ' '); // token 2 (p2x)
+    p2.x = stoi(item);
+    getline(linestream, item, ' '); // token 3 (p2y)
+    p2.y = stoi(item);
+
+    // determine which edge lies between p1 and p2
+    int edgeID = -1;
+    edgeID = getEdgeID(rst, p1, p2);
+    
+    // update capacity of determined edge
+    getline(linestream, item, ' '); // token 4 (newCap)
+    int newCap = stoi(item);
+    rst->edgeCaps[edgeID] = newCap;
+
+    // get ready to read next line
+    linestream.str("");
+    linestream.clear();
+  }
   
   // clean up and return
   //myfile.close();
@@ -215,8 +289,7 @@ int solveRouting(routingInst *rst)
       
       // pins have vertical gap
       for (int k = 0; k < ygap; ++k) {
-	// add horizontal edge to segment
-	 // add horizontal edge to segment
+	// add vertical edge to segment
         point currPoint;
         point nextPoint;
 
@@ -249,6 +322,11 @@ int solveRouting(routingInst *rst)
   return 1;
 }
 
+// Perform RRR on the given routing instance
+int RRR(routingInst *rst, int useNetD, int useNetO) {
+  return 0; // default fail
+}
+
 // Write the routing solution
 int writeOutput(const char *outRouteFile, routingInst *rst)
 {
@@ -261,19 +339,11 @@ int writeOutput(const char *outRouteFile, routingInst *rst)
   // write net segments to fileOut
   for (int i = 0; i < rst->numNets; ++i) // enumerates through nets
   {
-    /*
-    char *string = (char*) malloc(1000 * sizeof(char));
-    if (!string) {
-      fputs ("ERR: memory allocation for string failed", stderr);
-      exit (EXIT_FAILURE);
-    }
-    */
-
     fileOut << "n" << rst->nets[i].id << endl;
     
     for (int j = 0; j < rst->nets[i].nroute.numSegs; ++j) {
       // iterates through endpoints of routes
-
+      
       for (int k = 0; k < rst->nets[i].nroute.segments[j].numEdges; ++k) {
 	point p1;
 	point p2;
@@ -287,7 +357,7 @@ int writeOutput(const char *outRouteFile, routingInst *rst)
 	   p2.y << ")" << endl;
       }
     }
-
+    
     fileOut << "!" << endl;
   }
   
@@ -304,9 +374,6 @@ int writeOutput(const char *outRouteFile, routingInst *rst)
  * nets, then the fields in a routing instance, and finally
  * the routing instance) 
  */
-
-// Release memory used
-// NOTE: do these need to be in for loops?
 int release(routingInst *rst){
   /*********** TO BE FILLED BY YOU **********/
   if (!rst) return 0; // failure if rst is NULL
@@ -319,7 +386,7 @@ int release(routingInst *rst){
 
     // for each segment
     for (int j=0; j<rst->nets[i].nroute.numSegs; ++j) {
-      // free edges
+      // free each edge
       free(rst->nets[i].nroute.segments[j].edges);
     }
 
@@ -331,9 +398,13 @@ int release(routingInst *rst){
   free(rst->nets);
 
   // free edgeCaps and edgeUtils
-  // TODO
+  free(rst->edgeCaps);
+  free(rst->edgeUtils);
+
+  // free edgeHistories
+  free(rst->edgeHistories);
   
-  // release the routing instance itself
+  // free the routing instance itself
   free(rst);
 
   return 1; // success!
