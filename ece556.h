@@ -146,6 +146,7 @@ int* getNetOrder(routingInst *rst);
 */
 void decomp(routingInst *rst, int *netOrder);
 
+
 /* int RRR(routingInst *rst, int useNetD, int useNetO)
    Performs one iteration of "Rip-up and ReRoute".
    
