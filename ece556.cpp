@@ -322,9 +322,34 @@ int solveRouting(routingInst *rst)
   return 1;
 }
 
+
 // Perform RRR on the given routing instance
 int RRR(routingInst *rst, int useNetD, int useNetO) {
-  return 0; // default fail
+  int *netOrder = (int*) malloc(rst->numNets * sizeof(int));
+
+  // determine net ordering
+  if (useNetO) {
+    netOrder = getNetOrder(rst);
+  }
+  else {
+    for (int i = 0; i < rst->numNets; ++i) {
+      // SHOULD THIS ONLY INCLUDE NETS OF NON-ZERO COST??
+      netOrder[i] = rst->nets[i].id;
+    }
+  }
+
+  // use net decomposition or not
+  if (useNetD) {
+    decomp(rst, netOrder);
+  }
+  else {
+    // use algorithm from project part 1... how??
+      // edit arguments to solveRouting to include netOrder?
+  }
+
+  // clean up and return
+  free(netOrder);
+  return getTotalCost(rst);
 }
 
 // Write the routing solution
