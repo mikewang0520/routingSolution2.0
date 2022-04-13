@@ -14,8 +14,8 @@ NOTES
 FOR US
 ======
  O - KEEP CURRENT SOLVING ALGORITHM (to generate initial solution)
- O - Change execution input format
- ? - Generate initial solution (reordered pins tho!) (do we route between corners/pins ONLY, or from any point on newest segment??)
+ X - Change execution input format
+ ? - Generate initial solution (reordered pins tho?) (do we route between corners/pins ONLY, or from any point on newest segment??)
  O - Termination condition (terminate program if exceeds 15 minutes)
  O - Read in edge capacities (store in array? -> index = edgeID, value = capacity)
 
@@ -25,4 +25,4 @@ OFFICE HOURS
  O - RRR algorithm (how is this done?)
    O - Edge weight calculation (edge "priority" -> reroute if weight positive (utilization - capacity))
    O - Net ordering (RRR the nets in the order from highests "priority" to loewst
-   O - Maze routing (
+   O - Maze routing (A* algorithm?)

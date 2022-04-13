@@ -322,6 +322,11 @@ int solveRouting(routingInst *rst)
   return 1;
 }
 
+// Perform RRR on the given routing instance
+int RRR(routingInst *rst, int useNetD, int useNetO) {
+  return 0; // default fail
+}
+
 // Write the routing solution
 int writeOutput(const char *outRouteFile, routingInst *rst)
 {
