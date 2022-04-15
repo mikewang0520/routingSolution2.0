@@ -71,7 +71,8 @@ typedef struct
   int numEdges ; 	/* number of edges of the grid */
   int *edgeCaps; 	/* array of the actual edge capacities after considering for blockages */
   int *edgeUtils;	/* array of edge utilizations */
-  int *edgeHistories; /* index = edgeID, value = history value */
+  int *edgeHistories;   /* index = edgeID, value = history value */
+  int *edgeWeights;     /* index = edgeID, value = edge weight */
   
 } routingInst ;
 
@@ -93,6 +94,15 @@ int readBenchmark(const char *fileName, routingInst *rst);
    output: 1 if successful, 0 otherwise (e.g. the data structures are not populated) 
 */
 int solveRouting(routingInst *rst);
+
+/* in getEdgeWeight(routingInst *rst, int edgeID)
+   Calculates the weight of an edge given its ID
+
+   input1: pointer to the routing instance
+   input2: edge ID
+   output: weight of the edge
+*/
+int getEdgeWeight(routingInst *rst, int edgeID);
 
 
 /* int getSegWeight(routingInst *rst, segment currSeg)
@@ -137,33 +147,27 @@ int getTotalCost(routingInst *rst);
 int* getNetOrder(routingInst *rst);
 
 
-/* void decomp(routingInst *rst, int *netOrder)
-   Net decomposition given an ORDERED netlist.
+/* void decomp(routingInst *rst)
+   Net decomposition of all pins in all nets.
 
    input1: pointer to the routing instance
-   input2: pointer to an ORDERED netlist
-   output: doesn't return anything - rather, directy updates the nets and their routes in rst
+   output: doesn't return anything - rather, directy updates the nets and their pin ordering in rst
 */
-void decomp(routingInst *rst, int *netOrder);
+void decomp(routingInst *rst);
 
 
-/* int RRR(routingInst *rst, int useNetD, int useNetO)
+/* int RRR(routingInst *rst, int useNetO)
    Performs one iteration of "Rip-up and ReRoute".
    
    Calls "getNetOrder()" if using net ordering, otherwise
    uses the net order specified by the input file (possibly
-   uing decompositon)
-   
-   Calls "decomp()" if using net decomposition, otherwise
-   generates a solution using the algorithm from project
-   part 1 (possibly using net ordering)
+   decomposed)
    
    input1: pointer to the routing instance
-   input2: use net decomposition if 1
-   input3: use net ordering if 1
+   input2: use net ordering if 1
    output: total cost of re-routed routing instance (use getTotalCost(rst))
 */
-int RRR(routingInst *rst, int useNetD, int useNetO);
+int RRR(routingInst *rst, int useNetO);
 
 
 /* int writeOutput(const char *outRouteFile, routingInst *rst)

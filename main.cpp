@@ -4,12 +4,16 @@
 #include <ctype.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <chrono>
 
-#define DEBUG 1
+#define DEBUG 0
 #define ASCII_ZERO 48
 
 // CITED RESOURCES:
 // Command Line Parsing - https://www.gnu.org/software/libc/manual/html_node/Example-of-Getopt.html
+// Elapsed Time - https://www.techiedelight.com/measure-elapsed-time-program-chrono-library/#:~:text=Since%20C%2B%2B11%2C%20the,It%20includes%20the%20%3Cchrono.
+
+using namespace std;
 
 int
 main(int argc, char **argv)
@@ -46,7 +50,7 @@ main(int argc, char **argv)
   }
   
   if(argc < 3){
-    printf("Usage : ./ROUTE.exe <input_benchmark_name> <output_file_name> \n");
+    printf("Usage : ./ROUTE.exe <optional arguments> <input_benchmark_name> <output_file_name> \n");
     return 1;
   }
   
@@ -63,6 +67,10 @@ main(int argc, char **argv)
     printf("ERROR: reading input file \n");
     return 1;
   }
+
+  if (useNetD == 1) {
+    decomp(rst);
+  }
   
   // generate initial solution
   status = solveRouting(rst);
@@ -73,21 +81,34 @@ main(int argc, char **argv)
   }
   
   // perform RRR
-  if (useNetD !=0 || useNetO != 0) {
-    status = -1;
+
+  // status codes
+  // 0 = perfect solution
+  // # = total cost of routing instance
+  // run while not perfect solution and also not over 15 minutes
+
+  // NOTE: ADD TIMER OUT HERE IN MAIN.CPP
+  
+  if (useNetD != 0 || useNetO != 0) {
+    auto start = chrono::steady_clock::now(); // starting time!
+    int over15mins = 0;
     
     do {
-      status = RRR(rst, useNetD, useNetO);
-    } while (status != 0);
+      auto now = chrono::steady_clock::now();
+      if (chrono::duration_cast<chrono::seconds>(now - start).count() > 900)
+	over15mins = 1; // 15 minutes exceeded! run one more loop then exit
+	
+      status = RRR(rst, useNetO);
+    } while (status > 0 && over15mins == 0);
     
-    if (status == -1) {
+    if (status < 0) {
       printf("ERROR: running RRR");
       release(rst);
       return 1;
     }
   }
   
-  /// write the result
+    /// write the result
   status = writeOutput(outputFileName, rst);
   if(status==0){
     printf("ERROR: writing the result \n");

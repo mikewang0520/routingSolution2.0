@@ -163,11 +163,13 @@ int readBenchmark(const char *fileName, routingInst *rst){
   // calculate and store numEdges
   rst->numEdges = ((rst->gy) * ((rst->gx)-1)) + ((rst->gx) * ((rst->gy)-1));
 
-  // allocate space for edgeCaps, edgeUtils, and edgeHistories
-  rst->edgeCaps = (int*) malloc(rst->numEdges * sizeof(int));
-  memset(rst->edgeCaps, rst->cap, rst->numEdges); // fill default capacities
-  rst->edgeUtils = (int*) calloc(rst->numEdges, sizeof(int));
-  rst->edgeHistories = (int*) calloc(rst->numEdges, sizeof(int));
+  // allocate space for edgeCaps, edgeUtils, edgeHistories, and edgeWeights
+  rst->edgeCaps = (int*) malloc(rst->numEdges * sizeof(int));      // allocate capacities...
+  memset(rst->edgeCaps, rst->cap, rst->numEdges);                  // fill default capacities
+  rst->edgeUtils = (int*) calloc(rst->numEdges, sizeof(int));      // allocate utilizations... (and set to 0)
+  rst->edgeHistories = (int*) malloc(rst->numEdges * sizeof(int)); // allocate histories...
+  memset(rst->edgeHistories, 1, rst->numEdges);                    // default histories of 1 (makes sense AFTER "PART 1" in next step from main)
+  rst->edgeWeights = (int*) calloc(rst->numEdges, sizeof(int));    // allocate edge weights... (and set to 0)
 
   // BLOCKAGE READING GOES HERE
   // numBlockages
@@ -227,6 +229,7 @@ int readBenchmark(const char *fileName, routingInst *rst){
 int solveRouting(routingInst *rst)
 {
   /*********** TO BE FILLED BY YOU **********/
+  if (rst == 0) return -1; // failure!! (null rst)
   
   for(int i=0; i < rst->numNets; ++i){
     // iterate through all nets
@@ -280,7 +283,7 @@ int solveRouting(routingInst *rst)
 	}
 
 	// store edge ID
-	if (edgeID == -1) return -1;	
+	if (edgeID == -1) return -1; // failure!! (improper edge calculation)
 	rst->nets[i].nroute.segments[j].edges[edgeCount] = edgeID;
 	
 	// increment edgeCount
@@ -319,36 +322,331 @@ int solveRouting(routingInst *rst)
       }
     }
   }
-  return 1;
+  
+  return 1; // success!
 }
 
+int getEdgeWeight(routingInst *rst, int edgeID) {
+  return rst->edgeUtils[edgeID] * rst->edgeHistories[edgeID];
+}
 
-// Perform RRR on the given routing instance
-int RRR(routingInst *rst, int useNetD, int useNetO) {
-  int *netOrder = (int*) malloc(rst->numNets * sizeof(int));
+int getSegWeight(routingInst *rst, segment currSeg) {
+  int segWeight = 0;
 
-  // determine net ordering
-  if (useNetO) {
-    netOrder = getNetOrder(rst);
+  for (int i=0; i<currSeg.numEdges; ++i) {
+    segWeight += getEdgeWeight(rst, currSeg.edges[i]);
   }
+
+  return segWeight;
+}
+
+int getNetCost(routingInst *rst, net currNet) {
+  int netCost = 0;
+
+  for (int i=0; i<currNet.nroute.numSegs; ++i) {
+    netCost += getSegWeight(rst, currNet.nroute.segments[i]);
+  }
+
+  return netCost;
+}
+
+int getTotalCost(routingInst *rst) {
+  int totalCost = 0;
+
+  for (int i=0; i<rst->numNets; ++i) {
+    totalCost += getNetCost(rst, rst->nets[i]);
+  }
+
+  return totalCost;
+}
+
+void updateEdgeUtils(routingInst *rst) {
+  // set all edge utilizations to 0
+  memset(rst->edgeUtils, 0, rst->numEdges);
+
+  // for each net
+  for (int i=0; i<rst->numNets; ++i) {
+    // for each segment
+    for (int j=0; j<rst->nets[i].nroute.numSegs; ++j) {
+      // for each edge
+      for (int k=0; k<rst->nets[i].nroute.segments[j].numEdges; ++k) {
+	// increment edge's utilization
+	rst->edgeUtils[rst->nets[i].nroute.segments[j].edges[k]] += 1;
+      }
+    }
+  }
+}
+
+void updateEdgeWeights(routingInst *rst) {
+  // set all edge weights to 0
+  memset(rst->edgeWeights, 0, rst->numEdges);
+
+  // for each net
+  for (int i=0; i<rst->numNets; ++i) {
+    // for each segment
+    for (int j=0; j<rst->nets[i].nroute.numSegs; ++j) {
+      // for each edge
+      for (int k=0; k<rst->nets[i].nroute.segments[j].numEdges; ++k) {
+	// calculate and set each edge's weight in edgeWeights (yes there will likely be some repetition)
+	
+	int currEdgeID = rst->nets[i].nroute.segments[j].edges[k];
+	int o_k1 = rst->edgeUtils[currEdgeID] - rst->edgeCaps[currEdgeID];
+	if (o_k1 < 0) o_k1 = 0;
+	
+	// w_k = o_k1 * h_k
+	rst->edgeWeights[currEdgeID] = o_k1 * rst->edgeHistories[currEdgeID];
+      }
+    }
+  }
+}
+
+void updateEdgeHistories(routingInst *rst) {
+  // edgesUpdated is used to avoid 
+  int *edgesUpdated = (int*) calloc(rst->numEdges, sizeof(int)); // index = edgeID, value 1 = updated, value 0 = not updated
+
+  // for each net
+  for (int i=0; i<rst->numNets; ++i) {
+    // for each segment
+    for (int j=0; j<rst->nets[i].nroute.numSegs; ++j) {
+      // for each edge
+      for (int k=0; k<rst->nets[i].nroute.segments[j].numEdges; ++k) {
+        // calculate and update each edge's history in edgeHistory (yes there will likely be some repetition)
+	
+        int currEdgeID = rst->nets[i].nroute.segments[j].edges[k];
+        int o_k1 = rst->edgeUtils[currEdgeID] - rst->edgeCaps[currEdgeID];
+        if (o_k1 < 0) o_k1 = 0;
+	
+	// increment history if overflow (AND IF EDGE HISTORY WAS NOT ALREADY UPDATED)
+	if (edgesUpdated[currEdgeID] == 0 &&
+	    o_k1 > 0) {
+	  rst->edgeHistories[currEdgeID] += 1;
+	  edgesUpdated[currEdgeID] = 1; // "THIS HISTORY HAS NOW BEEN UPDATED"
+	}
+      }
+    }
+  }
+  
+  return;
+}
+
+int findDistance(point p1, point p2) {
+  return abs(p1.x - p2.x) + abs(p1.y - p2.y);
+}
+
+void findCorners(point p1, point p2, point *p3, point *p4) {
+  int x1 = p1.x;
+  int y1 = p1.y;
+  int x2 = p2.x;
+  int y2 = p2.y;
+
+  // When p1 and p2 are on a straight line
+  if (x2 == x1 || y2 == y1) {
+    // p3 and p4 NULL means we have a straight line
+    return;
+  }
+  // When p1 and p2 forms a rectangle
   else {
-    for (int i = 0; i < rst->numNets; ++i) {
-      // SHOULD THIS ONLY INCLUDE NETS OF NON-ZERO COST??
-      netOrder[i] = rst->nets[i].id;
+    p3->x = x1;
+    p3->y = y2;
+    p4->x = x2;
+    p4->y = y1;
+  }
+  
+  return;
+}
+
+// O(n3) ...gross
+void decomp(routingInst *rst) {
+  // for each net
+  for (int i=0; i<rst->numNets; ++i) {
+    // allocate a new (decomposed) pins array
+    //point *sortedPins = (point*) malloc(sizeof(rst->nets[i].pins));
+    //memset(sortedPins, -1, rst->nets[i].numPins); // set all pin indexes to -1 by default
+    
+    // bubble sort (ish) the pins based on relevant distances (will run for index range [0,numPins-1] as it should)
+    for (int j=0; j<rst->nets[i].numPins; ++j) {
+      int closestDistance = __INT_MAX__;
+      
+      for (int k=j; k<rst->nets[i].numPins; ++k) {
+	if (j == 0) {
+	  // find point closest to the origin to start
+	  point origin;
+	  origin.x = 0;
+	  origin.y = 0;
+	  
+	  if (int distance = findDistance(origin, rst->nets[i].pins[k]) < closestDistance) {
+	    std::swap(rst->nets[i].pins[j], rst->nets[i].pins[k]);
+	    closestDistance = distance;
+	  }
+	}
+	else if (j == 1) {
+	  // find closest pin to start pin (to form the first, ungodly rectangle...)
+	  if (int distance = findDistance(rst->nets[i].pins[j], rst->nets[i].pins[k]) < closestDistance) {
+	    std::swap(rst->nets[i].pins[j], rst->nets[i].pins[k]);
+	    closestDistance = distance;
+	  }
+	}
+	else {
+	  // ughhhh now we need to look at corners
+	  point p3;
+	  point p4;
+
+	  // initialization (to prevent "uninitialized" warnings)
+	  p3.x = -1;
+	  p3.y = -1;
+	  p4.x = -1;
+	  p4.y = -1;
+	  
+	  // propagate (maybe) p3 and p4 if corners are found. otherwise they'll both be NULL
+	  findCorners(rst->nets[i].pins[j-2], rst->nets[i].pins[j-1], &p3, &p4);
+
+	  // perform distance swaps from p1 and p2 (we don't know for sure if we have corners yet)
+
+	  // p1
+	  for (int l=j; l<rst->nets[i].numPins; ++l) {
+	    if (int distance = findDistance(rst->nets[i].pins[j-2], rst->nets[i].pins[l]) < closestDistance) {
+	      std::swap(rst->nets[i].pins[j], rst->nets[i].pins[l]);
+	      closestDistance = distance;
+	    }
+	  }
+
+	  // p2
+	  for (int l=j; l<rst->nets[i].numPins; ++l) {
+	    if (int distance = findDistance(rst->nets[i].pins[j-1], rst->nets[i].pins[l]) < closestDistance) {
+	      std::swap(rst->nets[i].pins[j], rst->nets[i].pins[l]);
+	      closestDistance = distance;
+	    }
+	  }
+
+	  // if false (p3.x is still -1), we can assume we have a straight line;
+	  // therefore, this function only performs distance swaps from p1 and p2,
+	  // so nothing more needs to happen and we're done for this loop cycle.
+	  if (p3.x != -1) {
+	    // perform distance swaps from p3 and p4 (rectangle corners)
+
+	    // p3
+	    for (int l=j; l<rst->nets[i].numPins; ++l) {
+	      if (int distance = findDistance(p3, rst->nets[i].pins[l]) < closestDistance) {
+		std::swap(rst->nets[i].pins[j], rst->nets[i].pins[l]);
+		closestDistance = distance;
+	      }
+	    }
+
+	    // p4
+	    for (int l=j; l<rst->nets[i].numPins; ++l) {
+              if (int distance = findDistance(p4, rst->nets[i].pins[l]) < closestDistance) {
+                std::swap(rst->nets[i].pins[j], rst->nets[i].pins[l]);
+                closestDistance = distance;
+              }
+            }
+	  }
+	}
+      }
     }
   }
 
-  // use net decomposition or not
-  if (useNetD) {
-    decomp(rst, netOrder);
-  }
-  else {
-    // use algorithm from project part 1... how??
-      // edit arguments to solveRouting to include netOrder?
+  return;
+}
+
+void getNetOrder(routingInst *rst, int *netOrder) {
+  // propagate netOrder
+
+  int netOrderIndex = 0;
+  // for each net
+  for (int i=0; i<rst->numNets; ++i) {
+    // if net has positive cost
+    if (getNetCost(rst, rst->nets[i]) > 0) {
+      // add net to netOrder
+      netOrder[netOrderIndex++] = i;
+    }
   }
 
+
+  // reverse bubble sort netOrder (in descending order) -> O(n2)
+
+  // netOrderIndex = num elements in netOrder
+  for (int i = netOrderIndex; i >= 0; --i) {
+    for (int j = netOrderIndex; j > netOrderIndex - i; --j) {
+      int jCost = getNetCost(rst, rst->nets[netOrder[j]]);
+      int j1Cost = getNetCost(rst, rst->nets[netOrder[j-1]]);
+      if (jCost > j1Cost) {
+	// swap elements
+	std::swap(netOrder[j], netOrder[j-1]);
+      }
+    }
+  }
+}
+
+// Rips up all nets in the netOrder and updates edge utilizations therein
+void RU(routingInst *rst, int *netOrder) {
+  // free all routing info for all nets in "netOrder" (until we hit a "net index" (NOT ID) of -1)
+  for (int i=0; netOrder[i] != -1; ++i) {
+    // for each segment
+    for (int j=0; j<rst->nets[netOrder[i]].nroute.numSegs; ++j) {
+      // for each edge update its utilization
+      for (int k=0; k<rst->nets[netOrder[i]].nroute.segments[j].numEdges; ++k) {
+        rst->edgeUtils[rst->nets[netOrder[i]].nroute.segments[j].edges[k]] -= 1; // decrement EDGE UTILIZATION
+      }
+      // free the segment's edges array
+      free(rst->nets[netOrder[i]].nroute.segments[j].edges);
+    }
+
+    // free the current net's route's segments array (removes numEdges too)
+    free(rst->nets[netOrder[i]].nroute.segments);
+
+    // reset the current net's route's numSegs to 0
+    rst->nets[netOrder[i]].nroute.numSegs = 0;
+  }
+
+  return;
+}
+
+void RR(routingInst *rst, int *netOrder) {
+  // Luke & Mike do maze routing here
+  
+  return;
+}
+
+// Perform RRR on the given routing instance
+int RRR(routingInst *rst, int useNetO) {
+  // UPDATE EDGE HISTORIES HERE
+  updateEdgeUtils(rst); // "sets" on first iteration (calc u_k1)
+  updateEdgeHistories(rst); // will always "update" (calc h_k)
+  updateEdgeWeights(rst); // "sets" on first iteration (calc w_k which is a function of u_k1 and h_k)
+
+  //int timerFlag = 0; // CHANGE THIS
+  int *netOrder = (int*) malloc(rst->numNets * sizeof(int) + 1); // "+1" so it'll always terminate in "-1" value
+  memset(netOrder, -1, rst->numNets * sizeof(int) + 1); // default all values to -1
+  
+  // determine net ordering (needs w_k !!)
+  if (useNetO) {
+    getNetOrder(rst, netOrder); // will only RRR nets with non-zero cost
+  }
+  else {
+    for (int i = 0; i < rst->numNets; ++i) {
+      netOrder[i] = i; // will RRR all nets
+    }
+  }
+
+  // Rip Up
+  RU(rst, netOrder);
+
+  // UPDATE EDGE UTILS AFTER RU (weights should NOT be updated ??? otherwise w_k would be a function of o_k instead of o_k1
+  updateEdgeUtils(rst); // re-route will create new edges
+  //updateEdgeWeights(rst);
+
+  // Re Route
+  RR(rst, netOrder);
+  
   // clean up and return
   free(netOrder);
+
+  
+  /*
+  // return -1 if 15 minutes is exceeded
+  if (timerFlag) return -1;
+  */
+  
   return getTotalCost(rst);
 }
 
