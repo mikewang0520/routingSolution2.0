@@ -7,6 +7,8 @@
 #include <cstdlib>
 #include "ece556.h"
 
+#define DEBUG 1
+
 using namespace std;
 
 int getEdgeID(routingInst *rst, point p1, point p2) {
@@ -83,6 +85,12 @@ void unpackEdgeID(routingInst *rst, int edgeID, point *p1, point *p2) {
   }
 
   return;
+}
+
+void dumpEdgeData(routingInst *rst) {
+  for (int i=0; i<rst->numEdges; ++i) {
+    printf("%d - cap: %d - util: %d - history: %d - weight: %d\n",i,rst->edgeCaps[i],rst->edgeUtils[i],rst->edgeHistories[i], rst->edgeWeights[i]);
+  }
 }
 
 int readBenchmark(const char *fileName, routingInst *rst){
@@ -165,12 +173,17 @@ int readBenchmark(const char *fileName, routingInst *rst){
 
   // allocate space for edgeCaps, edgeUtils, edgeHistories, and edgeWeights
   rst->edgeCaps = (int*) malloc(rst->numEdges * sizeof(int));      // allocate capacities...
-  memset(rst->edgeCaps, rst->cap, rst->numEdges);                  // fill default capacities
+  for (int i=0; i<rst->numEdges; ++i) rst->edgeCaps[i] = rst->cap; // fill default capacities
   rst->edgeUtils = (int*) calloc(rst->numEdges, sizeof(int));      // allocate utilizations... (and set to 0)
   rst->edgeHistories = (int*) malloc(rst->numEdges * sizeof(int)); // allocate histories...
-  memset(rst->edgeHistories, 1, rst->numEdges);                    // default histories of 1 (makes sense AFTER "PART 1" in next step from main)
+  for (int i=0; i<rst->numEdges; ++i) rst->edgeHistories[i] = 1;   // default histories of 1 (makes sense AFTER "PART 1" in next step from main)
   rst->edgeWeights = (int*) calloc(rst->numEdges, sizeof(int));    // allocate edge weights... (and set to 0)
 
+  if (DEBUG) {
+    printf("After struct init...\n");
+    dumpEdgeData(rst);
+  }
+  
   // BLOCKAGE READING GOES HERE
   // numBlockages
   // p1x p1y p2x p2y newCap
@@ -197,7 +210,7 @@ int readBenchmark(const char *fileName, routingInst *rst){
     // read p1
     getline(linestream, item, ' '); // token 0 (p1x)
     p1.x = stoi(item);
-    getline(linestream, item, ' '); // token 1 (p1y)
+    getline(linestream, item, '\t'); // token 1 (p1y)
     p1.y = stoi(item);
 
     // read p2
@@ -211,13 +224,18 @@ int readBenchmark(const char *fileName, routingInst *rst){
     edgeID = getEdgeID(rst, p1, p2);
     
     // update capacity of determined edge
-    getline(linestream, item, ' '); // token 4 (newCap)
+    getline(linestream, item, '\n'); // token 4 (newCap)
     int newCap = stoi(item);
     rst->edgeCaps[edgeID] = newCap;
 
     // get ready to read next line
     linestream.str("");
     linestream.clear();
+  }
+
+  if (DEBUG) {
+    printf("After blockage reading...\n");
+    dumpEdgeData(rst);
   }
   
   // clean up and return
@@ -327,7 +345,7 @@ int solveRouting(routingInst *rst)
 }
 
 int getEdgeWeight(routingInst *rst, int edgeID) {
-  return rst->edgeUtils[edgeID] * rst->edgeHistories[edgeID];
+  return rst->edgeWeights[edgeID];
 }
 
 int getSegWeight(routingInst *rst, segment currSeg) {
@@ -455,8 +473,22 @@ void findCorners(point p1, point p2, point *p3, point *p4) {
   return;
 }
 
-// O(n3) ...gross
+void dumpNetPins(net currNet) {
+  printf("n%d\n",currNet.id);
+  for (int i=0; i<currNet.numPins; ++i) {
+    printf("%d - (%d,%d)\n",i,currNet.pins[i].x, currNet.pins[i].y);
+  }
+}
+
+// ...gross
 void decomp(routingInst *rst) {
+  if (DEBUG) {
+    printf("Start decomp...\n");
+    for (int i=0; i<rst->numNets; ++i) {
+      dumpNetPins(rst->nets[i]);
+    }
+  }
+  
   // for each net
   for (int i=0; i<rst->numNets; ++i) {
     // allocate a new (decomposed) pins array
@@ -466,6 +498,7 @@ void decomp(routingInst *rst) {
     // bubble sort (ish) the pins based on relevant distances (will run for index range [0,numPins-1] as it should)
     for (int j=0; j<rst->nets[i].numPins; ++j) {
       int closestDistance = __INT_MAX__;
+      int distance = __INT_MAX__;
       
       for (int k=j; k<rst->nets[i].numPins; ++k) {
 	if (j == 0) {
@@ -474,15 +507,15 @@ void decomp(routingInst *rst) {
 	  origin.x = 0;
 	  origin.y = 0;
 	  
-	  if (int distance = findDistance(origin, rst->nets[i].pins[k]) < closestDistance) {
-	    std::swap(rst->nets[i].pins[j], rst->nets[i].pins[k]);
+	  if ((distance = findDistance(origin, rst->nets[i].pins[k])) < closestDistance) {
+	    std::swap(rst->nets[i].pins[0], rst->nets[i].pins[k]);
 	    closestDistance = distance;
 	  }
 	}
 	else if (j == 1) {
 	  // find closest pin to start pin (to form the first, ungodly rectangle...)
-	  if (int distance = findDistance(rst->nets[i].pins[j], rst->nets[i].pins[k]) < closestDistance) {
-	    std::swap(rst->nets[i].pins[j], rst->nets[i].pins[k]);
+	  if ((distance = findDistance(rst->nets[i].pins[0], rst->nets[i].pins[k])) < closestDistance) {
+	    std::swap(rst->nets[i].pins[1], rst->nets[i].pins[k]);
 	    closestDistance = distance;
 	  }
 	}
@@ -504,7 +537,7 @@ void decomp(routingInst *rst) {
 
 	  // p1
 	  for (int l=j; l<rst->nets[i].numPins; ++l) {
-	    if (int distance = findDistance(rst->nets[i].pins[j-2], rst->nets[i].pins[l]) < closestDistance) {
+	    if ((distance = findDistance(rst->nets[i].pins[j-2], rst->nets[i].pins[l])) < closestDistance) {
 	      std::swap(rst->nets[i].pins[j], rst->nets[i].pins[l]);
 	      closestDistance = distance;
 	    }
@@ -512,7 +545,7 @@ void decomp(routingInst *rst) {
 
 	  // p2
 	  for (int l=j; l<rst->nets[i].numPins; ++l) {
-	    if (int distance = findDistance(rst->nets[i].pins[j-1], rst->nets[i].pins[l]) < closestDistance) {
+	    if ((distance = findDistance(rst->nets[i].pins[j-1], rst->nets[i].pins[l])) < closestDistance) {
 	      std::swap(rst->nets[i].pins[j], rst->nets[i].pins[l]);
 	      closestDistance = distance;
 	    }
@@ -526,7 +559,7 @@ void decomp(routingInst *rst) {
 
 	    // p3
 	    for (int l=j; l<rst->nets[i].numPins; ++l) {
-	      if (int distance = findDistance(p3, rst->nets[i].pins[l]) < closestDistance) {
+	      if ((distance = findDistance(p3, rst->nets[i].pins[l])) < closestDistance) {
 		std::swap(rst->nets[i].pins[j], rst->nets[i].pins[l]);
 		closestDistance = distance;
 	      }
@@ -534,7 +567,7 @@ void decomp(routingInst *rst) {
 
 	    // p4
 	    for (int l=j; l<rst->nets[i].numPins; ++l) {
-              if (int distance = findDistance(p4, rst->nets[i].pins[l]) < closestDistance) {
+              if ((distance = findDistance(p4, rst->nets[i].pins[l])) < closestDistance) {
                 std::swap(rst->nets[i].pins[j], rst->nets[i].pins[l]);
                 closestDistance = distance;
               }
@@ -542,6 +575,13 @@ void decomp(routingInst *rst) {
 	  }
 	}
       }
+    }
+  }
+
+  if (DEBUG) {
+    printf("End decomp...\n");
+    for (int i=0; i<rst->numNets; ++i) {
+      dumpNetPins(rst->nets[i]);
     }
   }
 
@@ -566,11 +606,11 @@ void getNetOrder(routingInst *rst, int *netOrder) {
 
   // netOrderIndex = num elements in netOrder
   for (int i = netOrderIndex; i >= 0; --i) {
-    for (int j = netOrderIndex; j > netOrderIndex - i; --j) {
+    for (int j = netOrderIndex - 1; j > netOrderIndex - i; --j) {
       int jCost = getNetCost(rst, rst->nets[netOrder[j]]);
       int j1Cost = getNetCost(rst, rst->nets[netOrder[j-1]]);
       if (jCost > j1Cost) {
-	// swap elements
+	// swap elements (pushes higher cost towards left)
 	std::swap(netOrder[j], netOrder[j-1]);
       }
     }
@@ -578,9 +618,14 @@ void getNetOrder(routingInst *rst, int *netOrder) {
 }
 
 // Rips up all nets in the netOrder and updates edge utilizations therein
-void RU(routingInst *rst, int *netOrder) {
+void RU(routingInst *rst, int *netOrder, int n) {
+  if (DEBUG) {
+    printf("Before RU... \n");
+    dumpEdgeData(rst);
+  }
+
   // free all routing info for all nets in "netOrder" (until we hit a "net index" (NOT ID) of -1)
-  for (int i=0; netOrder[i] != -1; ++i) {
+  for (int i=0; i<n; ++i) {
     // for each segment
     for (int j=0; j<rst->nets[netOrder[i]].nroute.numSegs; ++j) {
       // for each edge update its utilization
@@ -598,6 +643,11 @@ void RU(routingInst *rst, int *netOrder) {
     rst->nets[netOrder[i]].nroute.numSegs = 0;
   }
 
+  if (DEBUG) {
+    printf("After RU...\n");
+    dumpEdgeData(rst);
+  }
+  
   return;
 }
 
@@ -614,9 +664,16 @@ int RRR(routingInst *rst, int useNetO) {
   updateEdgeHistories(rst); // will always "update" (calc h_k)
   updateEdgeWeights(rst); // "sets" on first iteration (calc w_k which is a function of u_k1 and h_k)
 
-  //int timerFlag = 0; // CHANGE THIS
-  int *netOrder = (int*) malloc(rst->numNets * sizeof(int) + 1); // "+1" so it'll always terminate in "-1" value
-  memset(netOrder, -1, rst->numNets * sizeof(int) + 1); // default all values to -1
+  // count how many non-zero nets there are
+  int nonzeroNets = 0;
+  for (int i=0; i<rst->numNets; ++i) {
+    if (getNetCost(rst, rst->nets[i]) > 0) {
+      ++nonzeroNets;
+    }
+  }
+
+  int netOrder[nonzeroNets];;
+  for (int i=0; i<nonzeroNets; ++i) netOrder[i] = -1; // default all values to -1
   
   // determine net ordering (needs w_k !!)
   if (useNetO) {
@@ -624,12 +681,14 @@ int RRR(routingInst *rst, int useNetO) {
   }
   else {
     for (int i = 0; i < rst->numNets; ++i) {
-      netOrder[i] = i; // will RRR all nets
+      if (getNetCost(rst, rst->nets[i]) > 0) {
+	netOrder[i] = i; // will RRR all non-zero nets, in the order specified by the input file
+      }
     }
   }
 
   // Rip Up
-  RU(rst, netOrder);
+  RU(rst, netOrder, nonzeroNets);
 
   // UPDATE EDGE UTILS AFTER RU (weights should NOT be updated ??? otherwise w_k would be a function of o_k instead of o_k1
   updateEdgeUtils(rst); // re-route will create new edges
@@ -639,13 +698,7 @@ int RRR(routingInst *rst, int useNetO) {
   RR(rst, netOrder);
   
   // clean up and return
-  free(netOrder);
-
-  
-  /*
-  // return -1 if 15 minutes is exceeded
-  if (timerFlag) return -1;
-  */
+  //free(netOrder);
   
   return getTotalCost(rst);
 }

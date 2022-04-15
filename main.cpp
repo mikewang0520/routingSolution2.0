@@ -6,7 +6,7 @@
 #include <unistd.h>
 #include <chrono>
 
-#define DEBUG 0
+#define DEBUG 1
 #define ASCII_ZERO 48
 
 // CITED RESOURCES:
