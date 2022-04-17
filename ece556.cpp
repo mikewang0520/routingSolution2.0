@@ -602,10 +602,13 @@ void getNetOrder(routingInst *rst, int *netOrder) {
   }
 
   if (DEBUG) {
-    printf("Pre getNetOrder Sorting...");
+    printf("Pre getNetOrder Sorting...\n");
+    printf("{");
     for (int i=0; i<netOrderIndex; ++i) {
-      printf("%d\n",netOrder[netOrderIndex]);
+      printf("n%d = %d",netOrder[i], getNetCost(rst, rst->nets[netOrder[i]]));
+      if (i+1 != netOrderIndex) printf(", ");
     }
+    printf("}\n");
   }
 
   // reverse bubble sort netOrder (in descending order) -> O(n2)
@@ -622,11 +625,14 @@ void getNetOrder(routingInst *rst, int *netOrder) {
     }
   }
 
-   if (DEBUG) {
-    printf("Post getNetOrder Sorting...");
+  if (DEBUG) {
+    printf("Post getNetOrder Sorting...\n");
+    printf("{");
     for (int i=0; i<netOrderIndex; ++i) {
-      printf("%d\n",netOrder[netOrderIndex]);
+      printf("n%d = %d",netOrder[i], getNetCost(rst, rst->nets[netOrder[i]]));
+      if (i+1 != netOrderIndex) printf(", ");
     }
+    printf("}\n");
   }
 }
 
@@ -665,7 +671,43 @@ void RU(routingInst *rst, int *netOrder, int n) {
 }
 
 void RR(routingInst *rst, int *netOrder, int n) {
-  // Luke & Mike do maze routing here
+  // Luke & Mike do maze routing
+  if (DEBUG) {
+    printf("Starting RR...\n");
+  }
+
+  // for each net that needs to be rerouted
+  for (int i=0; i<n; ++i) {
+    // propagate edgeAddCost array
+    int edgeAddCost[rst->numEdges];
+    for (int j=0; j<rst->numEdges; ++j) {
+      // if 0 cap blockage, NEVER consider this edge!!
+      if (rst->edgeCaps[j] == 0) {
+	edgeAddCost[j] = 999999;
+      }
+      else {
+	// cost to traverse this edge = 1 + its weight
+	edgeAddCost[j] = 1 + rst->edgeWeights[j];
+      }
+    }
+
+    if (DEBUG) {
+      printf("edgeAddCosts...\n");
+      for (int j=0; j<rst->numEdges; ++j) {
+	printf("%d - %d\n", j, edgeAddCost[j]);
+      }
+    }
+
+    // solve routing (from each pin to the next one IN ORDER)
+    for (int j=0; j<rst->nets[netOrder[i]].numPins - 1; ++j) {
+      // obtain the pins to be routed together
+      point p1 = rst->nets[netOrder[i]].pins[j];
+      point p2 = rst->nets[netOrder[i]].pins[j+1];
+      
+      // use Dijkstra's algorithm to solve between the two points ???
+      printf("Maze routing between {%d, %d} and {%d, %d}...\n", p1.x, p1.y, p2.x, p2.y);
+    }
+  }
   
   return;
 }
@@ -712,6 +754,10 @@ int RRR(routingInst *rst, int useNetO) {
   
   // clean up and return
   //free(netOrder);
+
+  if (DEBUG) {
+    printf("RR solution cost: %d\n", getTotalCost(rst));
+  }
   
   return getTotalCost(rst);
 }

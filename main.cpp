@@ -87,16 +87,15 @@ main(int argc, char **argv)
   // # = total cost of routing instance
   // run while not perfect solution and also not over 15 minutes
 
-  // NOTE: ADD TIMER OUT HERE IN MAIN.CPP
+  int over15mins = 0;
   
   if (useNetD != 0 || useNetO != 0) {
     auto start = chrono::steady_clock::now(); // starting time!
-    int over15mins = 0;
     
     do {
       auto now = chrono::steady_clock::now();
       if (chrono::duration_cast<chrono::seconds>(now - start).count() > 900)
-	over15mins = 1; // 15 minutes exceeded! run one more loop then exit
+	over15mins = 1; // 15 minutes exceeded! run one more RRR then exit
 	
       status = RRR(rst, useNetO);
     } while (status > 0 && over15mins == 0);
@@ -107,8 +106,10 @@ main(int argc, char **argv)
       return 1;
     }
   }
+
+  if (over15mins) printf("OVER 15 MINUTES - STOPPING RRR\n");
   
-    /// write the result
+  // write the result
   status = writeOutput(outputFileName, rst);
   if(status==0){
     printf("ERROR: writing the result \n");
