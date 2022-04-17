@@ -601,6 +601,12 @@ void getNetOrder(routingInst *rst, int *netOrder) {
     }
   }
 
+  if (DEBUG) {
+    printf("Pre getNetOrder Sorting...");
+    for (int i=0; i<netOrderIndex; ++i) {
+      printf("%d\n",netOrder[netOrderIndex]);
+    }
+  }
 
   // reverse bubble sort netOrder (in descending order) -> O(n2)
 
@@ -613,6 +619,13 @@ void getNetOrder(routingInst *rst, int *netOrder) {
 	// swap elements (pushes higher cost towards left)
 	std::swap(netOrder[j], netOrder[j-1]);
       }
+    }
+  }
+
+   if (DEBUG) {
+    printf("Post getNetOrder Sorting...");
+    for (int i=0; i<netOrderIndex; ++i) {
+      printf("%d\n",netOrder[netOrderIndex]);
     }
   }
 }
@@ -651,7 +664,7 @@ void RU(routingInst *rst, int *netOrder, int n) {
   return;
 }
 
-void RR(routingInst *rst, int *netOrder) {
+void RR(routingInst *rst, int *netOrder, int n) {
   // Luke & Mike do maze routing here
   
   return;
@@ -695,7 +708,7 @@ int RRR(routingInst *rst, int useNetO) {
   //updateEdgeWeights(rst);
 
   // Re Route
-  RR(rst, netOrder);
+  RR(rst, netOrder, nonzeroNets);
   
   // clean up and return
   //free(netOrder);
