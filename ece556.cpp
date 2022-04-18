@@ -5,9 +5,10 @@
 #include <fstream>
 #include <bits/stdc++.h>
 #include <cstdlib>
+#include <queue>
 #include "ece556.h"
 
-#define DEBUG 1
+#define DEBUG 0
 
 using namespace std;
 
@@ -611,16 +612,23 @@ void getNetOrder(routingInst *rst, int *netOrder) {
     printf("}\n");
   }
 
+  int *netCostList = (int*) malloc(rst->numNets * sizeof(int));
+  for (int i=0; i<rst->numNets; ++i) {
+    if (DEBUG) printf("Getting net cost of index %d...\n",i);
+    netCostList[i] = getNetCost(rst, rst->nets[i]);
+  }
+
   // reverse bubble sort netOrder (in descending order) -> O(n2)
 
   // netOrderIndex = num elements in netOrder
-  for (int i = netOrderIndex; i >= 0; --i) {
-    for (int j = netOrderIndex - 1; j > netOrderIndex - i; --j) {
-      int jCost = getNetCost(rst, rst->nets[netOrder[j]]);
-      int j1Cost = getNetCost(rst, rst->nets[netOrder[j-1]]);
-      if (jCost > j1Cost) {
+  for (int i = netOrderIndex - 1; i >= 0; --i) {
+    if (DEBUG) printf("Now ordering index %d...\n",i);
+    for (int j = 0; j < i; ++j) {
+      int jCost = netCostList[netOrder[j]];
+      int j1Cost = netCostList[netOrder[j+1]];
+      if (jCost < j1Cost) {
 	// swap elements (pushes higher cost towards left)
-	std::swap(netOrder[j], netOrder[j-1]);
+	std::swap(netOrder[j], netOrder[j+1]);
       }
     }
   }
@@ -633,6 +641,7 @@ void getNetOrder(routingInst *rst, int *netOrder) {
       if (i+1 != netOrderIndex) printf(", ");
     }
     printf("}\n");
+    getchar(); // wait for user to press enter
   }
 }
 
@@ -679,24 +688,26 @@ void RR(routingInst *rst, int *netOrder, int n) {
   // for each net that needs to be rerouted
   for (int i=0; i<n; ++i) {
     // propagate edgeAddCost array
-    int edgeAddCost[rst->numEdges];
+    int edgeAddCosts[rst->numEdges];
     for (int j=0; j<rst->numEdges; ++j) {
-      // if 0 cap blockage, NEVER consider this edge!!
+      // if 0 cap blockage, "NEVER" consider this edge!!
       if (rst->edgeCaps[j] == 0) {
-	edgeAddCost[j] = 999999;
+	edgeAddCosts[j] = 999999;
       }
       else {
 	// cost to traverse this edge = 1 + its weight
-	edgeAddCost[j] = 1 + rst->edgeWeights[j];
+	edgeAddCosts[j] = 1 + rst->edgeWeights[j];
       }
     }
 
+    /* // produces a LOT of debug statements in benchmarks
     if (DEBUG) {
       printf("edgeAddCosts...\n");
       for (int j=0; j<rst->numEdges; ++j) {
-	printf("%d - %d\n", j, edgeAddCost[j]);
+	printf("%d - %d\n", j, edgeAddCosts[j]);
       }
     }
+    */
 
     // solve routing (from each pin to the next one IN ORDER)
     for (int j=0; j<rst->nets[netOrder[i]].numPins - 1; ++j) {
@@ -706,6 +717,26 @@ void RR(routingInst *rst, int *netOrder, int n) {
       
       // use Dijkstra's algorithm to solve between the two points ???
       printf("Maze routing between {%d, %d} and {%d, %d}...\n", p1.x, p1.y, p2.x, p2.y);
+
+      struct subpath {
+	point s;
+	point dest;
+	int numEdges;
+	int *edges;
+	int cost;
+	
+	bool operator<(const subpath &rhs)
+	{
+	  return cost > rhs.cost;
+	}
+
+	bool endsAt(const point target)
+	{
+	  return (dest.x == target.x && dest.y == target.y);
+	}
+      };
+
+      // maze route
     }
   }
   
