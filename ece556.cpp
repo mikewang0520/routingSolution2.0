@@ -715,8 +715,8 @@ void RR(routingInst *rst, int *netOrder, int n) {
       point p1 = rst->nets[netOrder[i]].pins[j];
       point p2 = rst->nets[netOrder[i]].pins[j+1];
       
-      // use Dijkstra's algorithm to solve between the two points ???
-      printf("Maze routing between {%d, %d} and {%d, %d}...\n", p1.x, p1.y, p2.x, p2.y);
+      // use A* algorithm to solve between the two points ???
+      if (DEBUG) printf("Maze routing between {%d, %d} and {%d, %d}...\n", p1.x, p1.y, p2.x, p2.y);
 
       struct subpath {
 	point s;

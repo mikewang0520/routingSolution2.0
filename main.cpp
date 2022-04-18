@@ -7,6 +7,7 @@
 #include <chrono>
 
 #define DEBUG 1
+#define TIMESTAMPS 1
 #define ASCII_ZERO 48
 
 // CITED RESOURCES:
@@ -94,10 +95,17 @@ main(int argc, char **argv)
     
     do {
       auto now = chrono::steady_clock::now();
+      if (TIMESTAMPS) printf("RRR Start: %ld minutes %ld seconds\n", chrono::duration_cast<chrono::seconds>(now - start).count() / 60, chrono::duration_cast<chrono::seconds>(now - start).count() % 60);
       if (chrono::duration_cast<chrono::seconds>(now - start).count() > 900)
 	over15mins = 1; // 15 minutes exceeded! run one more RRR then exit
-	
+
+      // ACTUALLY RUN RRR
       status = RRR(rst, useNetO);
+      
+      if (TIMESTAMPS) {
+	now = chrono::steady_clock::now();
+	printf("RRR End: %ld minutes %ld seconds\n", chrono::duration_cast<chrono::seconds>(now - start).count() / 60, chrono::duration_cast<chrono::seconds>(now - start).count() % 60);
+      }
     } while (status > 0 && over15mins == 0);
     
     if (status < 0) {
