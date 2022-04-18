@@ -8,7 +8,7 @@
 #include <queue>
 #include "ece556.h"
 
-#define DEBUG 0
+#define DEBUG 1
 
 using namespace std;
 
