@@ -11,7 +11,7 @@
 
 #define DEBUG 0 // general debug flag
 #define EDGE_DEBUG 0 // used to turn edgeDataDump on or off
-#define PROGRESS_DEBUG 1;
+#define PROGRESS_DEBUG 1
 
 using namespace std;
 
@@ -663,13 +663,13 @@ void getNetOrder(routingInst *rst, int *netOrder) {
 
   int *netCostList = (int*) malloc(rst->numNets * sizeof(int));
   for (int i=0; i<rst->numNets; ++i) {
-    if (DEBUG) {
+    if (PROGRESS_DEBUG) {
       printf("Getting net cost of index %d...\r",i);
       fflush(stdout);
     }
     netCostList[i] = getNetCost(rst, rst->nets[i]);
   }
-  if (DEBUG) {
+  if (PROGRESS_DEBUG) {
     printf("\n");
   }
 
@@ -677,7 +677,7 @@ void getNetOrder(routingInst *rst, int *netOrder) {
 
   // netOrderIndex = num elements in netOrder
   for (int i = netOrderIndex - 1; i >= 0; --i) {
-    if (DEBUG) {
+    if (PROGRESS_DEBUG) {
       printf("Now ordering index %d...\r",i);
       fflush(stdout);
     }
@@ -690,7 +690,7 @@ void getNetOrder(routingInst *rst, int *netOrder) {
       }
     }
   }
-  if (DEBUG) printf("\n");
+  if (PROGRESS_DEBUG) printf("\n");
 
   if (DEBUG) {
     printf("Post getNetOrder Sorting...\n");
@@ -701,6 +701,8 @@ void getNetOrder(routingInst *rst, int *netOrder) {
     }
     printf("}\n");
   }
+
+  free(netCostList);
 }
 
 // Rips up all nets in the netOrder and updates edge utilizations therein
@@ -777,8 +779,11 @@ void RR(routingInst *rst, int netIndex) {
   
   // for each net that needs to be rerouted
   //  for (int i=0; i<n; ++i) {
-  if (DEBUG) printf("NOW ROUTING NET %d\n",netIndex);
-  bool *edgesAdded = (bool*) malloc(rst->numEdges * sizeof(int)); // keeps track of which edges were added while routing this net
+  if (DEBUG) {
+    printf("NOW ROUTING NET %d\r",netIndex);
+    fflush(stdout);
+  }
+  bool *edgesAdded = (bool*) malloc(rst->numEdges * sizeof(bool)); // keeps track of which edges were added while routing this net
   for (int j=0; j<rst->numEdges; ++j) edgesAdded[j] = 0; // initializes all values to "not added during this reroute"
   
   /*
@@ -813,8 +818,8 @@ void RR(routingInst *rst, int netIndex) {
     point source = rst->nets[netIndex].pins[j];
     point target = rst->nets[netIndex].pins[j+1];
     
-    // use Dijkstra's algorithm to solve between the two points ???
-    if (DEBUG) printf("Maze routing between {%d, %d} and {%d, %d}...\n", source.x, source.y, target.x, target.y);
+    // use A* algorithm to solve between the two points ???
+    if (PROGRESS_DEBUG) printf("Maze routing between {%d, %d} and {%d, %d}...\n", source.x, source.y, target.x, target.y);
     
     // nodes that have been visited where min-cost path from starting point is known
     std::queue<subpath> RP; // revisit path
@@ -958,7 +963,7 @@ int RRR(routingInst *rst, int useNetO) {
     }
   }
 
-  int netOrder[nonzeroNets];;
+  int netOrder[nonzeroNets];
   for (int i=0; i<nonzeroNets; ++i) netOrder[i] = -1; // default all values to -1
   
   // determine net ordering (needs w_k !!)
@@ -968,7 +973,7 @@ int RRR(routingInst *rst, int useNetO) {
   else {
     int netOrderIndex = 0;
     for (int i = 0; i < rst->numNets; ++i) {
-      if (getNetCost(rst, rst->nets[i]) > 0) {
+      if (getNetCost(rst, rst->nets[i]) > 0) { // NOTE: NOT THE MOST EFFICIENT
 	netOrder[netOrderIndex++] = i; // will RRR all non-zero nets, in the order specified by the input file
       }
     }
@@ -981,6 +986,7 @@ int RRR(routingInst *rst, int useNetO) {
 
     printf("REROUTING NET %d...\n",i);
     RR(rst, netOrder[i]);
+    if (PROGRESS_DEBUG) printf("\n");
 
     if (getTotalCost(rst) == 0) break;
 
