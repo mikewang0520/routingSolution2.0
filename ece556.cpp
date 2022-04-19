@@ -797,75 +797,91 @@ void RR(routingInst *rst, int *netOrder, int n) {
       }
     }
 
-    // solve routing (from each pin to the next one IN ORDER)
-    for (int j=0; j<rst->nets[netOrder[i]].numPins - 1; ++j) {
-      // obtain the pins to be routed together
-      point source = rst->nets[netOrder[i]].pins[j];
-      point target = rst->nets[netOrder[i]].pins[j+1];
-      
-      // use Dijkstra's algorithm to solve between the two points ???
-      printf("Maze routing between {%d, %d} and {%d, %d}...\n", source.x, source.y, target.x, target.y);
+      // solve routing (from each pin to the next one IN ORDER)
+  for (int j=0; j<rst->nets[netIndex].numPins - 1; ++j) {
+    // obtain the pins to be routed together
+    point source = rst->nets[netIndex].pins[j];
+    point target = rst->nets[netIndex].pins[j+1];
+    
+    // use A* algorithm to solve between the two points ???
+    if (PROGRESS_DEBUG) printf("Maze routing between {%d, %d} and {%d, %d}...\n", source.x, source.y, target.x, target.y);
+    
+    // nodes that have been visited where min-cost path from starting point is known
+    std::queue<subpath> RP; // revisit path
+    
+    // nodes that have been visited but min-cost path from starting node has not been found
+    std::priority_queue<subpath> PQ;
+    
+    // set of all points with 
+    std::unordered_set<Point, Point::HashFunction> visited_points;
+    
+    // temp priority queue
+    std::priority_queue<subpath> temp_PQ;
 
-      // nodes that have been visited where min-cost path from starting point is known
-      std::queue<subpath> RP; // revisit path
-
-      // nodes that have been visited but min-cost path from starting node has not been found
-      std::priority_queue<subpath> PQ;
-
-      // set of all points with 
-      std::unordered_set<Point, Point::HashFunction> visited_points;
-        
-      // initialize point
-      point curr_pnt = source;
-      int curr_pnt_cost = 0;
-      RP.push(subpath{source,source,curr_pnt_cost}); // add the starting point to the min-cost path queue
-      visited_points.insert(Point{curr_pnt.x, curr_pnt.y});
-      
-	  // cost function for A*
-	  int fn;
-
-      while((curr_pnt.x != target.x) || (curr_pnt.y != target.y)){ //  if current point is target point -> exit and retrace min-path
-        if ((curr_pnt.x != 0) && (visited_points.find(Point{curr_pnt.x - 1, curr_pnt.y}) == visited_points.end())){ // if not bottom edge & not a visitied node
-          // add line left
-          point px = {curr_pnt.x - 1, curr_pnt.y};
-          //fn = findDistance(px, target) + (getEdgeWeight(rst, getEdgeID(rst, curr_pnt, px))+curr_pnt_cost); // f(n) = h(n) + g(n)  -> A* cost function
-          fn = findDistance(px, target) + (edgeAddCost[getEdgeID(rst, curr_pnt, px)]+curr_pnt_cost); // f(n) = h(n) + g(n)  -> A* cost function
-		  PQ.push(subpath{curr_pnt, px, fn});
-        }
-        if ((curr_pnt.x != rst->gx - 1) && (visited_points.find(Point{curr_pnt.x + 1, curr_pnt.y}) == visited_points.end())){ // if not top edge & not a visitied node
-          // add line right
-          point px = {curr_pnt.x + 1, curr_pnt.y};
-          //fn = findDistance(px, target) + (getEdgeWeight(rst, getEdgeID(rst, curr_pnt, px))+curr_pnt_cost); // f(n) = h(n) + g(n)  -> A* cost function
-          fn = findDistance(px, target) + (edgeAddCost[getEdgeID(rst, curr_pnt, px)]+curr_pnt_cost); // f(n) = h(n) + g(n)  -> A* cost function
-		  PQ.push(subpath{curr_pnt, px, fn});
-        }
-        if ((curr_pnt.y != 0) && (visited_points.find(Point{curr_pnt.x, curr_pnt.y - 1}) == visited_points.end())){ // if not left edge & not a visitied node
-          // add line below
-          point py = {curr_pnt.x, curr_pnt.y - 1};
-          //fn = findDistance(py, target) + (getEdgeWeight(rst, getEdgeID(rst, curr_pnt, py))+curr_pnt_cost); // f(n) = h(n) + g(n)  -> A* cost function
-          fn = findDistance(py, target) + (edgeAddCost[getEdgeID(rst, curr_pnt, py)]+curr_pnt_cost); // f(n) = h(n) + g(n)  -> A* cost function
-		  PQ.push(subpath{curr_pnt, py, fn});  
-        }
-        if ((curr_pnt.y != rst->gy - 1) && (visited_points.find(Point{curr_pnt.x, curr_pnt.y + 1}) == visited_points.end())){ // if not right edge & not a visitied node
-          // add line above
-          point py = {curr_pnt.x, curr_pnt.y + 1};
-          //fn = findDistance(py, target) + (getEdgeWeight (rst, getEdgeID(rst, curr_pnt, py))+curr_pnt_cost); // f(n) = h(n) + g(n)  -> A* cost function
-		  fn = findDistance(py, target) + (edgeAddCost[getEdgeID(rst, curr_pnt, py)]+curr_pnt_cost); // f(n) = h(n) + g(n)  -> A* cost function
-          PQ.push(subpath{curr_pnt, py, fn}); 
-        }
-
-        // get min_edge off pq for next iteration
-        subpath min_edge = PQ.top();
-		PQ.pop();
-        // add to revisit path queue
-        RP.push(min_edge);
-        // set new current point
-        curr_pnt = min_edge.to;
-        // reset curr_pnt_cost
-        curr_pnt_cost = min_edge.cost;
-        // add point with known min-cost to point set
-        visited_points.insert(Point{curr_pnt.x, curr_pnt.y});
+    // initialize point
+    point curr_pnt = source;
+    int curr_pnt_cost = 0;
+    RP.push(subpath{source,source,curr_pnt_cost}); // add the starting point to the min-cost path queue
+    visited_points.insert(Point{curr_pnt.x, curr_pnt.y});
+    
+    // cost function for A*
+    int fn;
+    
+    /*
+      int bbmax_x;
+      int bbmin_x;
+      int bbmax_y;
+      int bbmin_y;
+    */
+    
+    // explore all viable edges until target is reached
+    while((curr_pnt.x != target.x) || (curr_pnt.y != target.y)){ //  if current point is target point -> exit and retrace min-path
+      while(!temp_PQ.empty()){
+        temp_PQ.pop();
       }
+      if ((curr_pnt.x != 0) && (visited_points.find(Point{curr_pnt.x - 1, curr_pnt.y}) == visited_points.end())){ // if not bottom edge & not a visitied node
+	// add line left
+	point px = {curr_pnt.x - 1, curr_pnt.y};
+	//fn = findDistance(px, target) + (getEdgeWeight(rst, getEdgeID(rst, curr_pnt, px))+curr_pnt_cost); // f(n) = h(n) + g(n)  -> A* cost function
+	fn = findDistance(px, target) + (edgeAddCost[getEdgeID(rst, curr_pnt, px)]+curr_pnt_cost); // f(n) = h(n) + g(n)  -> A* cost function
+	temp_PQ.push(subpath{curr_pnt, px, fn});
+      }
+      if ((curr_pnt.x != rst->gx - 1) && (visited_points.find(Point{curr_pnt.x + 1, curr_pnt.y}) == visited_points.end())){ // if not top edge & not a visitied node
+	// add line right
+	point px = {curr_pnt.x + 1, curr_pnt.y};
+	//fn = findDistance(px, target) + (getEdgeWeight(rst, getEdgeID(rst, curr_pnt, px))+curr_pnt_cost); // f(n) = h(n) + g(n)  -> A* cost function
+	fn = findDistance(px, target) + (edgeAddCost[getEdgeID(rst, curr_pnt, px)]+curr_pnt_cost); // f(n) = h(n) + g(n)  -> A* cost function
+	temp_PQ.push(subpath{curr_pnt, px, fn});
+      }
+      if ((curr_pnt.y != 0) && (visited_points.find(Point{curr_pnt.x, curr_pnt.y - 1}) == visited_points.end())){ // if not left edge & not a visitied node
+	// add line below
+	point py = {curr_pnt.x, curr_pnt.y - 1};
+	//fn = findDistance(py, target) + (getEdgeWeight(rst, getEdgeID(rst, curr_pnt, py))+curr_pnt_cost); // f(n) = h(n) + g(n)  -> A* cost function
+	fn = findDistance(py, target) + (edgeAddCost[getEdgeID(rst, curr_pnt, py)]+curr_pnt_cost); // f(n) = h(n) + g(n)  -> A* cost function
+	temp_PQ.push(subpath{curr_pnt, py, fn});  
+      }
+      if ((curr_pnt.y != rst->gy - 1) && (visited_points.find(Point{curr_pnt.x, curr_pnt.y + 1}) == visited_points.end())){ // if not right edge & not a visitied node
+	// add line above
+	point py = {curr_pnt.x, curr_pnt.y + 1};
+	//fn = findDistance(py, target) + (getEdgeWeight (rst, getEdgeID(rst, curr_pnt, py))+curr_pnt_cost); // f(n) = h(n) + g(n)  -> A* cost function
+	fn = findDistance(py, target) + (edgeAddCost[getEdgeID(rst, curr_pnt, py)]+curr_pnt_cost); // f(n) = h(n) + g(n)  -> A* cost function
+	temp_PQ.push(subpath{curr_pnt, py, fn}); 
+      }
+      if (!temp_PQ.empty()){
+	PQ.push(temp_PQ.top());
+      }
+      // get min_edge off pq for next iteration
+      subpath min_edge = PQ.top();
+      PQ.pop();
+      // add to revisit path queue
+      RP.push(min_edge);
+      // set new current point
+      curr_pnt = min_edge.to;
+      // reset curr_pnt_cost
+      curr_pnt_cost = min_edge.cost;
+      // add point with known min-cost to point set
+      visited_points.insert(Point{curr_pnt.x, curr_pnt.y});
+    }
       printQueue(RP);
     } // END OF INNER FOR LOOP //
 
