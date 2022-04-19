@@ -9,6 +9,8 @@
 #define DEBUG 1
 #define TIMESTAMPS 1
 #define ASCII_ZERO 48
+#define MAX_RUNTIME_MINS 15
+#define MAX_PENALIZED_RUNTIME_MINS 20
 
 // CITED RESOURCES:
 // Command Line Parsing - https://www.gnu.org/software/libc/manual/html_node/Example-of-Getopt.html
@@ -88,25 +90,55 @@ main(int argc, char **argv)
   // # = total cost of routing instance
   // run while not perfect solution and also not over 15 minutes
 
-  int over15mins = 0;
+  bool outOfTime = 0;
   
   if (useNetD != 0 || useNetO != 0) {
+    printf("STARTING RRR...\n");
     auto start = chrono::steady_clock::now(); // starting time!
+    auto max_runtime = chrono::steady_clock::now(); // max_runtime is based on the FIRST runtime. This might not always be true...
+
+    int RRR_cycles = 0;
     
     do {
-      auto now = chrono::steady_clock::now();
-      if (TIMESTAMPS) printf("RRR Start: %ld minutes %ld seconds\n", chrono::duration_cast<chrono::seconds>(now - start).count() / 60, chrono::duration_cast<chrono::seconds>(now - start).count() % 60);
-      if (chrono::duration_cast<chrono::seconds>(now - start).count() > 900)
-	over15mins = 1; // 15 minutes exceeded! run one more RRR then exit
+      auto cycleStart = chrono::steady_clock::now(); // time of starting this cycle
+
+      // print starting time
+      if (TIMESTAMPS) printf("RRR Start Cycle %d: %ld minutes %ld seconds\n", RRR_cycles, chrono::duration_cast<chrono::seconds>(cycleStart - start).count() / 60, chrono::duration_cast<chrono::seconds>(cycleStart - start).count() % 60);
+
+      // 15 minutes exceeded! try to run one more RRR then exit!
+      if (chrono::duration_cast<chrono::seconds>(cycleStart - start).count() > (MAX_RUNTIME_MINS * 60)) {
+	printf("RRR: 15 minutes exceeded! Attempting one more cycle...\n");
+	outOfTime = 1;
+      }
+
+      // another cycle actually might exceed 20 minutes! Terminate now!
+      if (RRR_cycles != 0) {
+	if (chrono::duration_cast<chrono::seconds>(cycleStart - start).count() + chrono::duration_cast<chrono::seconds>(max_runtime - start).count() > ((MAX_PENALIZED_RUNTIME_MINS) * 60)) {
+	  // another cycle might exceed 20 minutes! Terminate now!
+	  printf("RRR: Another cycle might exceed 20 minutes! Terminating program...\n");
+	  outOfTime = 1;
+	  break;
+	}
+      }
 
       // ACTUALLY RUN RRR
       status = RRR(rst, useNetO);
-      
-      if (TIMESTAMPS) {
-	now = chrono::steady_clock::now();
-	printf("RRR End: %ld minutes %ld seconds\n", chrono::duration_cast<chrono::seconds>(now - start).count() / 60, chrono::duration_cast<chrono::seconds>(now - start).count() % 60);
+      ++RRR_cycles;
+
+      // get cycle end time
+      auto cycleEnd = chrono::steady_clock::now();
+
+      if (RRR_cycles == 1) {
+	max_runtime = chrono::steady_clock::now();
       }
-    } while (status > 0 && over15mins == 0);
+
+      if (TIMESTAMPS) {
+	printf("RRR End: %ld minutes %ld seconds\n",
+	       chrono::duration_cast<chrono::seconds>(cycleEnd - start).count() / 60,
+	       chrono::duration_cast<chrono::seconds>(cycleEnd - start).count() % 60
+	       );
+      }      
+    } while (status > 0 && outOfTime == 0);
     
     if (status < 0) {
       printf("ERROR: running RRR");
@@ -115,7 +147,7 @@ main(int argc, char **argv)
     }
   }
 
-  if (over15mins) printf("OVER 15 MINUTES - STOPPING RRR\n");
+  if (outOfTime) printf("STOPPING RRR: Out Of Time!\n");
   
   // write the result
   status = writeOutput(outputFileName, rst);

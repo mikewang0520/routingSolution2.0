@@ -8,7 +8,8 @@
 #include <queue>
 #include "ece556.h"
 
-#define DEBUG 1
+#define DEBUG 0 // general debug flag
+#define EDGE_DEBUG 0 // used to turn edgeDataDump on or off
 
 using namespace std;
 
@@ -89,8 +90,10 @@ void unpackEdgeID(routingInst *rst, int edgeID, point *p1, point *p2) {
 }
 
 void dumpEdgeData(routingInst *rst) {
-  for (int i=0; i<rst->numEdges; ++i) {
-    printf("%d - cap: %d - util: %d - history: %d - weight: %d\n",i,rst->edgeCaps[i],rst->edgeUtils[i],rst->edgeHistories[i], rst->edgeWeights[i]);
+  if (EDGE_DEBUG) {
+    for (int i=0; i<rst->numEdges; ++i) {
+      printf("%d - cap: %d - util: %d - history: %d - weight: %d\n",i,rst->edgeCaps[i],rst->edgeUtils[i],rst->edgeHistories[i], rst->edgeWeights[i]);
+    }
   }
 }
 
@@ -614,15 +617,24 @@ void getNetOrder(routingInst *rst, int *netOrder) {
 
   int *netCostList = (int*) malloc(rst->numNets * sizeof(int));
   for (int i=0; i<rst->numNets; ++i) {
-    if (DEBUG) printf("Getting net cost of index %d...\n",i);
+    if (DEBUG) {
+      printf("Getting net cost of index %d...\r",i);
+      fflush(stdout);
+    }
     netCostList[i] = getNetCost(rst, rst->nets[i]);
+  }
+  if (DEBUG) {
+    printf("\n");
   }
 
   // reverse bubble sort netOrder (in descending order) -> O(n2)
 
   // netOrderIndex = num elements in netOrder
   for (int i = netOrderIndex - 1; i >= 0; --i) {
-    if (DEBUG) printf("Now ordering index %d...\n",i);
+    if (DEBUG) {
+      printf("Now ordering index %d...\r",i);
+      fflush(stdout);
+    }
     for (int j = 0; j < i; ++j) {
       int jCost = netCostList[netOrder[j]];
       int j1Cost = netCostList[netOrder[j+1]];
@@ -632,6 +644,7 @@ void getNetOrder(routingInst *rst, int *netOrder) {
       }
     }
   }
+  if (DEBUG) printf("\n");
 
   if (DEBUG) {
     printf("Post getNetOrder Sorting...\n");
@@ -786,11 +799,13 @@ int RRR(routingInst *rst, int useNetO) {
   // clean up and return
   //free(netOrder);
 
-  if (DEBUG) {
-    printf("RR solution cost: %d\n", getTotalCost(rst));
-  }
-  
-  return getTotalCost(rst);
+  int totalCost = getTotalCost(rst);
+  printf("RR solution cost: %d\n", totalCost);
+
+  // update edgeUtils and edgeWeights before returning a cost function (???)
+  //updateEdgeUtils(rst);
+  //updateEdgeWeights(rst);
+  return totalCost;
 }
 
 // Write the routing solution
