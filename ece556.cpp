@@ -779,9 +779,10 @@ int RRR(routingInst *rst, int useNetO) {
     getNetOrder(rst, netOrder); // will only RRR nets with non-zero cost
   }
   else {
+    int netOrderIndex = 0;
     for (int i = 0; i < rst->numNets; ++i) {
       if (getNetCost(rst, rst->nets[i]) > 0) {
-	netOrder[i] = i; // will RRR all non-zero nets, in the order specified by the input file
+	netOrder[netOrderIndex++] = i; // will RRR all non-zero nets, in the order specified by the input file
       }
     }
   }
