@@ -429,7 +429,7 @@ int getTotalCost(routingInst *rst) {
 
 void updateEdgeUtils(routingInst *rst) {
   // set all edge utilizations to 0
-  memset(rst->edgeUtils, 0, rst->numEdges);
+  for (int i=0; i<rst->numEdges; ++i) rst->edgeUtils[i] = 0;
 
   // for each net
   for (int i=0; i<rst->numNets; ++i) {
@@ -699,7 +699,6 @@ void getNetOrder(routingInst *rst, int *netOrder) {
       if (i+1 != netOrderIndex) printf(", ");
     }
     printf("}\n");
-    getchar(); // wait for user to press enter
   }
 }
 
@@ -720,6 +719,7 @@ void RU(routingInst *rst, int *netOrder, int n) {
       }
       // free the segment's edges array
       free(rst->nets[netOrder[i]].nroute.segments[j].edges);
+      rst->nets[netOrder[i]].nroute.segments[j].numEdges = 0; // all edges ripped up
     }
 
     // free the current net's route's segments array (NO NEED TO FREE SEGMENTS ARRAY -> NUMSEGS WILL ALWAYS BE THE SAME)
@@ -777,11 +777,21 @@ void RR(routingInst *rst, int *netOrder, int n) {
   
   // for each net that needs to be rerouted
   for (int i=0; i<n; ++i) {
+    if (DEBUG) printf("NOW ROUTING NET %d\n",netOrder[i]);
+    bool *edgesAdded = (bool*) malloc(rst->numEdges * sizeof(int)); // keeps track of which edges were added while routing this net
+    for (int j=0; j<rst->numEdges; ++j) edgesAdded[j] = 0; // initializes all values to "not added during this reroute"
+
+    /*
+    updateEdgeUtils(rst);
+    if (DEBUG) printf("NOW DUMPING EDGE DATA\n");
+    dumpEdgeData(rst);
+    */
+    
     // propagate edgeAddCost array
     int edgeAddCost[rst->numEdges];
     for (int j=0; j<rst->numEdges; ++j) {
       // if 0 cap blockage, NEVER consider this edge!!
-      if (rst->edgeCaps[j] == 0) {
+      if (rst->edgeCaps[j] == 0 || rst->edgeCaps[j] - rst->edgeUtils[j] <= 0) {
 	edgeAddCost[j] = 999999;
       }
       else {
@@ -804,7 +814,7 @@ void RR(routingInst *rst, int *netOrder, int n) {
       point target = rst->nets[netOrder[i]].pins[j+1];
       
       // use Dijkstra's algorithm to solve between the two points ???
-      printf("Maze routing between {%d, %d} and {%d, %d}...\n", source.x, source.y, target.x, target.y);
+      if (DEBUG) printf("Maze routing between {%d, %d} and {%d, %d}...\n", source.x, source.y, target.x, target.y);
       
       // nodes that have been visited where min-cost path from starting point is known
       std::queue<subpath> RP; // revisit path
@@ -823,6 +833,13 @@ void RR(routingInst *rst, int *netOrder, int n) {
       
       // cost function for A*
       int fn;
+
+      /*
+      int bbmax_x;
+      int bbmin_x;
+      int bbmax_y;
+      int bbmin_y;
+      */
 
       // explore all viable edges until target is reached
       while((curr_pnt.x != target.x) || (curr_pnt.y != target.y)){ //  if current point is target point -> exit and retrace min-path
@@ -869,12 +886,12 @@ void RR(routingInst *rst, int *netOrder, int n) {
       }
 
       // this contains all visited edges, terminating in target -> need to reverse search to 
-      printQueue(RP);
+      //if (DEBUG) printQueue(RP);
 
       // create a reversed queue (target @ front, source @ back)
       queue<subpath> rev_RP;
       reverseQueue(RP, &rev_RP);
-      printQueue(rev_RP);
+      if (DEBUG) printQueue(rev_RP);
 
       // count and create array of points on path
       int numPoints = 0;
@@ -889,57 +906,39 @@ void RR(routingInst *rst, int *netOrder, int n) {
       }
       pathPoints[numPoints++] = currPoint; // add source to the path
 
-      for (int k=0; k<numPoints; ++k) {
-	printf("PATHPOINT: {%d,%d}\n",pathPoints[k].x,pathPoints[k].y); // THIS WORKS YAY
+      if (DEBUG) {
+	for (int k=0; k<numPoints; ++k) {
+	  printf("PATHPOINT: {%d,%d}\n",pathPoints[k].x,pathPoints[k].y); // THIS WORKS YAY
+	}
       }
       
-      // create a segment out of the valid point path
-      //rst->nets[netOrder[i]].nroute.segments[j]
+      // create a segment out of the valid point path (numEdges equals numPoints-1)
+      rst->nets[netOrder[i]].nroute.segments[j].edges = (int*) malloc((numPoints-1) * sizeof(int));
+      for (int k=0; k<numPoints-1; ++k) {
+	rst->nets[netOrder[i]].nroute.segments[j].edges[k] = getEdgeID(rst, pathPoints[k], pathPoints[k+1]); // add edge to segment
+	++rst->nets[netOrder[i]].nroute.segments[j].numEdges; // increment numEdges
+      }
 
       // set edgeAddCosts to 0 for all edges added (i.e. it'll cost 0 to "retrace" already formed paths)
-	
-    } // END OF PIN-TO-PIN FOR LOOP //
+      for (int k=0; k<rst->nets[netOrder[i]].nroute.segments[j].numEdges; ++k) {
+	if (edgesAdded[rst->nets[netOrder[i]].nroute.segments[j].edges[k]] == 0) {
+	  edgesAdded[rst->nets[netOrder[i]].nroute.segments[j].edges[k]] = 1; // this edge has now been added during this reroute
+	  //++rst->edgeUtils[rst->nets[netOrder[i]].nroute.segments[j].edges[k]]; // update the utilization value
+	  edgeAddCost[rst->nets[netOrder[i]].nroute.segments[j].edges[k]] = 0;
+	}
+      }
+
+      free(pathPoints);
+    } // END OF ALL PIN-TO-PIN (PER NET) FOR LOOP //
     
-    /*
-    point source_point = rst->nets[netOrder[i]].pins[0]; // this isn't always going to be true...
-    queue<point>path;
-    queue<subpath> RP_comparator;
-    
-    RP = reverseQueue(RP);
-
-    printQueue(RP);
-    RP_comparator = RP;
-    RP_comparator.pop(); // get it one iteration ahead
-    
-    // add first two elements
-    path.push(RP.front().to);
-    path.push(RP.front().from);
-    
-    int cntr = 1;
-    while((RP_comparator.front().from.x != source_point.x) || (RP_comparator.front().from.y != source_point.y)){
-      if((RP.front().from.x == RP_comparator.front().to.x) & (RP.front().from.y == RP_comparator.front().to.y)){
-        while(cntr != 0){
-          RP.pop();
-          --cntr;
-        }
-        cntr = 1;
-        RP_comparator.pop();
-        path.push(RP.front().from);
-      } else{
-        RP_comparator.pop();
-        ++cntr;
-      } 
-    }
-    path.push(source_point);
-    path = reverseQueue(path); // final path of net => yay!
-
-
-    // NEED TO ADD NEW PATH TO THE DATA STRUCT //
-    */
-
-
   } // END OF ALL NETS FOR LOOP //
 
+  if (EDGE_DEBUG) {
+    printf("Post RR Edge Dump...\n");
+    updateEdgeUtils(rst);
+    dumpEdgeData(rst);
+  }
+  
   return;
 }
 
@@ -984,8 +983,9 @@ int RRR(routingInst *rst, int useNetO) {
   // Re Route
   RR(rst, netOrder, nonzeroNets);
   
-  // clean up and return
-  //free(netOrder);
+  // update values
+  updateEdgeUtils(rst);
+  updateEdgeWeights(rst);
 
   int totalCost = getTotalCost(rst);
   printf("RR solution cost: %d\n", totalCost);
