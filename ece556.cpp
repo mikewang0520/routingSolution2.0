@@ -6,12 +6,57 @@
 #include <bits/stdc++.h>
 #include <cstdlib>
 #include <queue>
+#include <unordered_set>
 #include "ece556.h"
 
-#define DEBUG 0 // general debug flag
-#define EDGE_DEBUG 0 // used to turn edgeDataDump on or off
+#define DEBUG 1 // general debug flag
+#define EDGE_DEBUG 1 // used to turn edgeDataDump on or off
 
 using namespace std;
+
+// STRUCTS
+
+struct subpath{
+  point from ;
+  point to ;
+  int cost ;
+  bool operator<(const subpath &rhs) const
+  {
+    return cost > rhs.cost;
+  }
+};
+
+// got this point sturcture online
+struct Point
+{
+  int x;
+  int y;
+  
+  Point() { }
+  Point(int x, int y)
+  {
+    this->x = x;
+    this->y = y;
+  }
+  
+  bool operator==(const Point& otherPoint) const
+  {
+    if (this->x == otherPoint.x && this->y == otherPoint.y) return true;
+    else return false;
+  }
+  
+  struct HashFunction
+  {
+    size_t operator()(const Point& point) const
+    {
+      size_t xHash = std::hash<int>()(point.x);
+      size_t yHash = std::hash<int>()(point.y) << 1;
+      return xHash ^ yHash;
+    }
+  };
+};
+
+// FUNCTIONS
 
 int getEdgeID(routingInst *rst, point p1, point p2) {
   int x1;
@@ -677,11 +722,11 @@ void RU(routingInst *rst, int *netOrder, int n) {
       free(rst->nets[netOrder[i]].nroute.segments[j].edges);
     }
 
-    // free the current net's route's segments array (removes numEdges too)
-    free(rst->nets[netOrder[i]].nroute.segments);
+    // free the current net's route's segments array (NO NEED TO FREE SEGMENTS ARRAY -> NUMSEGS WILL ALWAYS BE THE SAME)
+    //free(rst->nets[netOrder[i]].nroute.segments);
 
-    // reset the current net's route's numSegs to 0
-    rst->nets[netOrder[i]].nroute.numSegs = 0;
+    // reset the current net's route's numSegs to 0 (NUMSEGS WILL ALWAYS BE THE SAME)
+    //rst->nets[netOrder[i]].nroute.numSegs = 0;
   }
 
   if (DEBUG) {
@@ -692,67 +737,209 @@ void RU(routingInst *rst, int *netOrder, int n) {
   return;
 }
 
+void printQueue(queue<subpath> q) {
+  printf("Printing Queue...\n");
+  int qsize = (int)q.size();
+  for(int i = 0; i < qsize; i++) {
+    subpath top = q.front();
+    printf("{%d,%d}{%d,%d} %d\n", 
+	   top.from.x,
+	   top.from.y,
+	   top.to.x,
+	   top.to.y,
+	   top.cost
+	   );
+    q.pop();	
+  }
+}
+
+void reverseQueue(queue<subpath> q, queue<subpath> *rev_q) {
+  stack<subpath>st; // stack -> LIFO (last-in, first-out)
+  
+  // put queue in stack
+  while(!q.empty()){
+    st.push(q.front());
+    q.pop();
+  }
+  
+  // put stack back in queue
+  while(!st.empty()){
+    (*rev_q).push(st.top());
+    st.pop();
+  }
+}
+
 void RR(routingInst *rst, int *netOrder, int n) {
   // Luke & Mike do maze routing
   if (DEBUG) {
     printf("Starting RR...\n");
   }
-
+  
   // for each net that needs to be rerouted
   for (int i=0; i<n; ++i) {
     // propagate edgeAddCost array
-    int edgeAddCosts[rst->numEdges];
+    int edgeAddCost[rst->numEdges];
     for (int j=0; j<rst->numEdges; ++j) {
-      // if 0 cap blockage, "NEVER" consider this edge!!
+      // if 0 cap blockage, NEVER consider this edge!!
       if (rst->edgeCaps[j] == 0) {
-	edgeAddCosts[j] = 999999;
+	edgeAddCost[j] = 999999;
       }
       else {
 	// cost to traverse this edge = 1 + its weight
-	edgeAddCosts[j] = 1 + rst->edgeWeights[j];
+	edgeAddCost[j] = 1 + rst->edgeWeights[j];
       }
     }
-
-    /* // produces a LOT of debug statements in benchmarks
+    
     if (DEBUG) {
       printf("edgeAddCosts...\n");
       for (int j=0; j<rst->numEdges; ++j) {
-	printf("%d - %d\n", j, edgeAddCosts[j]);
+	printf("%d - %d\n", j, edgeAddCost[j]);
       }
     }
-    */
-
+    
     // solve routing (from each pin to the next one IN ORDER)
     for (int j=0; j<rst->nets[netOrder[i]].numPins - 1; ++j) {
       // obtain the pins to be routed together
-      point p1 = rst->nets[netOrder[i]].pins[j];
-      point p2 = rst->nets[netOrder[i]].pins[j+1];
+      point source = rst->nets[netOrder[i]].pins[j];
+      point target = rst->nets[netOrder[i]].pins[j+1];
       
-      // use A* algorithm to solve between the two points ???
-      if (DEBUG) printf("Maze routing between {%d, %d} and {%d, %d}...\n", p1.x, p1.y, p2.x, p2.y);
+      // use Dijkstra's algorithm to solve between the two points ???
+      printf("Maze routing between {%d, %d} and {%d, %d}...\n", source.x, source.y, target.x, target.y);
+      
+      // nodes that have been visited where min-cost path from starting point is known
+      std::queue<subpath> RP; // revisit path
+      
+      // nodes that have been visited but min-cost path from starting node has not been found
+      std::priority_queue<subpath> PQ;
+      
+      // set of all points with 
+      std::unordered_set<Point, Point::HashFunction> visited_points;
+      
+      // initialize point
+      point curr_pnt = source;
+      int curr_pnt_cost = 0;
+      RP.push(subpath{source,source,curr_pnt_cost}); // add the starting point to the min-cost path queue
+      visited_points.insert(Point{curr_pnt.x, curr_pnt.y});
+      
+      // cost function for A*
+      int fn;
 
-      struct subpath {
-	point s;
-	point dest;
-	int numEdges;
-	int *edges;
-	int cost;
+      // explore all viable edges until target is reached
+      while((curr_pnt.x != target.x) || (curr_pnt.y != target.y)){ //  if current point is target point -> exit and retrace min-path
+        if ((curr_pnt.x != 0) && (visited_points.find(Point{curr_pnt.x - 1, curr_pnt.y}) == visited_points.end())){ // if not bottom edge & not a visitied node
+          // add line left
+          point px = {curr_pnt.x - 1, curr_pnt.y};
+          //fn = findDistance(px, target) + (getEdgeWeight(rst, getEdgeID(rst, curr_pnt, px))+curr_pnt_cost); // f(n) = h(n) + g(n)  -> A* cost function
+          fn = findDistance(px, target) + (edgeAddCost[getEdgeID(rst, curr_pnt, px)]+curr_pnt_cost); // f(n) = h(n) + g(n)  -> A* cost function
+	  PQ.push(subpath{curr_pnt, px, fn});
+        }
+        if ((curr_pnt.x != rst->gx - 1) && (visited_points.find(Point{curr_pnt.x + 1, curr_pnt.y}) == visited_points.end())){ // if not top edge & not a visitied node
+          // add line right
+          point px = {curr_pnt.x + 1, curr_pnt.y};
+          //fn = findDistance(px, target) + (getEdgeWeight(rst, getEdgeID(rst, curr_pnt, px))+curr_pnt_cost); // f(n) = h(n) + g(n)  -> A* cost function
+          fn = findDistance(px, target) + (edgeAddCost[getEdgeID(rst, curr_pnt, px)]+curr_pnt_cost); // f(n) = h(n) + g(n)  -> A* cost function
+	  PQ.push(subpath{curr_pnt, px, fn});
+        }
+        if ((curr_pnt.y != 0) && (visited_points.find(Point{curr_pnt.x, curr_pnt.y - 1}) == visited_points.end())){ // if not left edge & not a visitied node
+          // add line below
+          point py = {curr_pnt.x, curr_pnt.y - 1};
+          //fn = findDistance(py, target) + (getEdgeWeight(rst, getEdgeID(rst, curr_pnt, py))+curr_pnt_cost); // f(n) = h(n) + g(n)  -> A* cost function
+          fn = findDistance(py, target) + (edgeAddCost[getEdgeID(rst, curr_pnt, py)]+curr_pnt_cost); // f(n) = h(n) + g(n)  -> A* cost function
+	  PQ.push(subpath{curr_pnt, py, fn});  
+        }
+        if ((curr_pnt.y != rst->gy - 1) && (visited_points.find(Point{curr_pnt.x, curr_pnt.y + 1}) == visited_points.end())){ // if not right edge & not a visitied node
+          // add line above
+          point py = {curr_pnt.x, curr_pnt.y + 1};
+          //fn = findDistance(py, target) + (getEdgeWeight (rst, getEdgeID(rst, curr_pnt, py))+curr_pnt_cost); // f(n) = h(n) + g(n)  -> A* cost function
+	  fn = findDistance(py, target) + (edgeAddCost[getEdgeID(rst, curr_pnt, py)]+curr_pnt_cost); // f(n) = h(n) + g(n)  -> A* cost function
+          PQ.push(subpath{curr_pnt, py, fn}); 
+        }
 	
-	bool operator<(const subpath &rhs)
-	{
-	  return cost > rhs.cost;
-	}
+        // get min_edge off pq for next iteration
+        subpath min_edge = PQ.top();
+	PQ.pop();
+        // add to revisit path queue
+        RP.push(min_edge);
+        // set new current point
+        curr_pnt = min_edge.to;
+        // reset curr_pnt_cost
+        curr_pnt_cost = min_edge.cost;
+        // add point with known min-cost to point set
+        visited_points.insert(Point{curr_pnt.x, curr_pnt.y});
+      }
 
-	bool endsAt(const point target)
-	{
-	  return (dest.x == target.x && dest.y == target.y);
-	}
-      };
+      // this contains all visited edges, terminating in target -> need to reverse search to 
+      printQueue(RP);
 
-      // maze route
+      // create a reversed queue (target @ front, source @ back)
+      queue<subpath> rev_RP;
+      reverseQueue(RP, &rev_RP);
+      printQueue(rev_RP);
+
+      // count and create array of points on path
+      int numPoints = 0;
+      point currPoint = (rev_RP.front().to);
+      point *pathPoints = (point*) malloc((int)rev_RP.size() * sizeof(point)); // allocated enough space to store every point (will only have numPoints indexes)
+      while (currPoint.x != source.x || currPoint.y != source.y) {
+	if (currPoint.x == rev_RP.front().to.x && currPoint.y == rev_RP.front().to.y) {
+	  pathPoints[numPoints++] = currPoint;
+	  currPoint = (rev_RP.front().from);
+	}
+	rev_RP.pop();
+      }
+      pathPoints[numPoints++] = currPoint; // add source to the path
+
+      for (int k=0; k<numPoints; ++k) {
+	printf("PATHPOINT: {%d,%d}\n",pathPoints[k].x,pathPoints[k].y); // THIS WORKS YAY
+      }
+      
+      // create a segment out of the valid point path
+      //rst->nets[netOrder[i]].nroute.segments[j]
+
+      // set edgeAddCosts to 0 for all edges added (i.e. it'll cost 0 to "retrace" already formed paths)
+	
+    } // END OF PIN-TO-PIN FOR LOOP //
+    
+    /*
+    point source_point = rst->nets[netOrder[i]].pins[0]; // this isn't always going to be true...
+    queue<point>path;
+    queue<subpath> RP_comparator;
+    
+    RP = reverseQueue(RP);
+
+    printQueue(RP);
+    RP_comparator = RP;
+    RP_comparator.pop(); // get it one iteration ahead
+    
+    // add first two elements
+    path.push(RP.front().to);
+    path.push(RP.front().from);
+    
+    int cntr = 1;
+    while((RP_comparator.front().from.x != source_point.x) || (RP_comparator.front().from.y != source_point.y)){
+      if((RP.front().from.x == RP_comparator.front().to.x) & (RP.front().from.y == RP_comparator.front().to.y)){
+        while(cntr != 0){
+          RP.pop();
+          --cntr;
+        }
+        cntr = 1;
+        RP_comparator.pop();
+        path.push(RP.front().from);
+      } else{
+        RP_comparator.pop();
+        ++cntr;
+      } 
     }
-  }
-  
+    path.push(source_point);
+    path = reverseQueue(path); // final path of net => yay!
+
+
+    // NEED TO ADD NEW PATH TO THE DATA STRUCT //
+    */
+
+
+  } // END OF ALL NETS FOR LOOP //
+
   return;
 }
 
@@ -791,7 +978,7 @@ int RRR(routingInst *rst, int useNetO) {
   RU(rst, netOrder, nonzeroNets);
 
   // UPDATE EDGE UTILS AFTER RU (weights should NOT be updated ??? otherwise w_k would be a function of o_k instead of o_k1
-  updateEdgeUtils(rst); // re-route will create new edges
+  //updateEdgeUtils(rst); // re-route will create new edges
   //updateEdgeWeights(rst);
 
   // Re Route
