@@ -16,7 +16,7 @@
 using namespace std;
 
 // STRUCTS
-
+struct subpath{
 point from;
 point to;
 int cost;
@@ -900,15 +900,13 @@ void RR(routingInst *rst, int netIndex)
 
   // for each net that needs to be rerouted
   //  for (int i=0; i<n; ++i) {
-  if (DEBUG)
-  {
-    printf("NOW ROUTING NET %d\r", netIndex);
+  if (DEBUG) {
+    printf("NOW ROUTING NET %d\n",netIndex);
     fflush(stdout);
   }
-  bool *edgesAdded = (bool *)malloc(rst->numEdges * sizeof(bool)); // keeps track of which edges were added while routing this net
-  for (int j = 0; j < rst->numEdges; ++j)
-    edgesAdded[j] = 0; // initializes all values to "not added during this reroute"
-
+  bool *edgesAdded = (bool*) malloc(rst->numEdges * sizeof(bool)); // keeps track of which edges were added while routing this net
+  for (int j=0; j<rst->numEdges; ++j) edgesAdded[j] = 0;
+  
   /*
     updateEdgeUtils(rst);
     if (DEBUG) printf("NOW DUMPING EDGE DATA\n");
@@ -943,13 +941,15 @@ void RR(routingInst *rst, int netIndex)
   // solve routing (from each pin to the next one IN ORDER)
   for (int j = 0; j < rst->nets[netIndex].numPins - 1; ++j)
   {
+    //printf("Now routing net %d - routing from pin %d/%d\r",netIndex,j,rst->nets[netIndex].numPins - 2);
+    
     // obtain the pins to be routed together
     point source = rst->nets[netIndex].pins[j];
     point target = rst->nets[netIndex].pins[j + 1];
 
     // use A* algorithm to solve between the two points ???
-    if (PROGRESS_DEBUG)
-      printf("Maze routing between {%d, %d} and {%d, %d}...\n", source.x, source.y, target.x, target.y);
+    //if (PROGRESS_DEBUG)
+    //  printf("Maze routing between {%d, %d} and {%d, %d}...\n", source.x, source.y, target.x, target.y);
 
     // nodes that have been visited where min-cost path from starting point is known
     std::queue<subpath> RP; // revisit path
@@ -993,10 +993,12 @@ void RR(routingInst *rst, int netIndex)
     point py = {-1, -1};
     while ((curr_pnt.x != target.x) || (curr_pnt.y != target.y))
     { //  if current point is target point -> exit and retrace min-path
+/*  
       while (!temp_PQ.empty())
       {
         temp_PQ.pop();
       }
+*/
       if ((curr_pnt.x != bbmin_x) && (visited_points.find(Point{curr_pnt.x - 1, curr_pnt.y}) == visited_points.end()))
       { // if not bottom edge & not a visitied node
         // if ((curr_pnt.x !- bbmin_x) && visitedNode[getNodeID(rst, curr_pnt.x - 1, curr_pnt.y)] != 1) {
@@ -1005,7 +1007,7 @@ void RR(routingInst *rst, int netIndex)
         px = {curr_pnt.x - 1, curr_pnt.y};
         // fn = findDistance(px, target) + (getEdgeWeight(rst, getEdgeID(rst, curr_pnt, px))+curr_pnt_cost); // f(n) = h(n) + g(n)  -> A* cost function
         fn = findDistance(px, target) + (edgeAddCost[getEdgeID(rst, curr_pnt, px)] + curr_pnt_cost); // f(n) = h(n) + g(n)  -> A* cost function
-        temp_PQ.push(subpath{curr_pnt, px, fn});
+        PQ.push(subpath{curr_pnt, px, fn});
       }
       if ((curr_pnt.x != bbmax_x) && (visited_points.find(Point{curr_pnt.x + 1, curr_pnt.y}) == visited_points.end()))
       { // if not top edge & not a visitied node
@@ -1013,7 +1015,7 @@ void RR(routingInst *rst, int netIndex)
         px = {curr_pnt.x + 1, curr_pnt.y};
         // fn = findDistance(px, target) + (getEdgeWeight(rst, getEdgeID(rst, curr_pnt, px))+curr_pnt_cost); // f(n) = h(n) + g(n)  -> A* cost function
         fn = findDistance(px, target) + (edgeAddCost[getEdgeID(rst, curr_pnt, px)] + curr_pnt_cost); // f(n) = h(n) + g(n)  -> A* cost function
-        temp_PQ.push(subpath{curr_pnt, px, fn});
+        PQ.push(subpath{curr_pnt, px, fn});
       }
       if ((curr_pnt.y != bbmin_y) && (visited_points.find(Point{curr_pnt.x, curr_pnt.y - 1}) == visited_points.end()))
       { // if not left edge & not a visitied node
@@ -1021,7 +1023,7 @@ void RR(routingInst *rst, int netIndex)
         py = {curr_pnt.x, curr_pnt.y - 1};
         // fn = findDistance(py, target) + (getEdgeWeight(rst, getEdgeID(rst, curr_pnt, py))+curr_pnt_cost); // f(n) = h(n) + g(n)  -> A* cost function
         fn = findDistance(py, target) + (edgeAddCost[getEdgeID(rst, curr_pnt, py)] + curr_pnt_cost); // f(n) = h(n) + g(n)  -> A* cost function
-        temp_PQ.push(subpath{curr_pnt, py, fn});
+        PQ.push(subpath{curr_pnt, py, fn});
       }
       if ((curr_pnt.y != bbmax_y) && (visited_points.find(Point{curr_pnt.x, curr_pnt.y + 1}) == visited_points.end()))
       { // if not right edge & not a visitied node
@@ -1029,21 +1031,22 @@ void RR(routingInst *rst, int netIndex)
         py = {curr_pnt.x, curr_pnt.y + 1};
         // fn = findDistance(py, target) + (getEdgeWeight (rst, getEdgeID(rst, curr_pnt, py))+curr_pnt_cost); // f(n) = h(n) + g(n)  -> A* cost function
         fn = findDistance(py, target) + (edgeAddCost[getEdgeID(rst, curr_pnt, py)] + curr_pnt_cost); // f(n) = h(n) + g(n)  -> A* cost function
-        temp_PQ.push(subpath{curr_pnt, py, fn});
+        PQ.push(subpath{curr_pnt, py, fn});
       }
+/*
       if (!temp_PQ.empty())
       {
         PQ.push(temp_PQ.top());
       }
-
+*/
       // get min_edge off pq for next iteration
       subpath min_edge = PQ.top();
       PQ.pop();
 
-      if (PROGRESS_DEBUG)
-      {
-        printf("NOW EXPLORING EDGE LEADING TO: {%d,%d} cost=%d\n", min_edge.to.x, min_edge.to.y, min_edge.cost);
-      }
+      //if (PROGRESS_DEBUG)
+      //{
+      //  printf("NOW EXPLORING EDGE LEADING TO: {%d,%d} cost=%d\n", min_edge.to.x, min_edge.to.y, min_edge.cost);
+      //}
       // add to revisit path queue
       RP.push(min_edge);
       // set new current point
@@ -1176,10 +1179,10 @@ int RRR(routingInst *rst, int useNetO)
   // Rip Up
   for (int i = 0; i < nonzeroNets; ++i)
   {
-    printf("RIPPING UP NET %d...\n", netOrder[i]);
+    printf("RIPPING UP NET %d/%d... ID = %d\n", i, nonzeroNets-1, netOrder[i]);
     RU(rst, netOrder[i]);
 
-    printf("REROUTING NET %d...\n", netOrder[i]);
+    printf("REROUTING...\n");
     RR(rst, netOrder[i]);
     if (PROGRESS_DEBUG)
       printf("\n");
