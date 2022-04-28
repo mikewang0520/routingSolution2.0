@@ -92,8 +92,8 @@ main(int argc, char **argv)
   // run while not perfect solution and also not over 15 minutes
 
   bool outOfTime = 0;
-  
-  if (useNetD != 0 || useNetO != 0) {
+  bool stop_flag = 0;
+  //if (useNetD != 0 || useNetO != 0) {
     printf("STARTING RRR...\n");
     auto start = chrono::steady_clock::now(); // starting time!
     auto max_runtime = chrono::steady_clock::now(); // max_runtime is based on the FIRST runtime. This might not always be true...
@@ -138,15 +138,21 @@ main(int argc, char **argv)
 	       chrono::duration_cast<chrono::seconds>(cycleEnd - start).count() / 60,
 	       chrono::duration_cast<chrono::seconds>(cycleEnd - start).count() % 60
 	       );
-      }      
-    } while (status > 0 && outOfTime == 0);
+      } 
+      if ((useNetD == 0) || (useNetO == 0)){
+        if (RRR_cycles > 4){
+          stop_flag = 1;
+        }
+      }     
+    } while (status > 0 && outOfTime == 0 && !stop_flag);
     
     if (status < 0) {
+      printf("Num Cycles: %d\n", RRR_cycles);
       printf("ERROR: running RRR");
       release(rst);
       return 1;
     }
-  }
+  //}
 
   if (outOfTime) printf("STOPPING RRR: Out Of Time!\n");
   

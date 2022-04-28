@@ -11,7 +11,7 @@ CCC = g++
 # Compiler options                                                              
 # ---------------------------------------------------------------------         
 
-CCOPT = -m64 -O -fPIC -fexceptions -DNDEBUG -DIL_STD -g -Wall
+CCOPT = -m64 -O0 -fPIC -fexceptions -DNDEBUG -DIL_STD -g -Wall -pg
 
 # ---------------------------------------------------------------------         
 # Link options and libraries                                                    
