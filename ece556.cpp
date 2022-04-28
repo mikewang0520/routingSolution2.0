@@ -967,586 +967,586 @@ int RR(routingInst *rst, int netIndex, int iteration){
   printf("Generated initial solution\n");
 
 
-  // int dx = iteration + 1;
-  // int dy = iteration + 1;
-  // point curr_point;
-  // point nxt_point;
-  // int edgeID;
+  int dx = iteration + 1;
+  int dy = iteration + 1;
+  point curr_point;
+  point nxt_point;
+  int edgeID;
 
-  // // iterate through the segments of the net -> store best solution in segment structure
-  // for(int i=0; i<rst->nets[netIndex].nroute.numSegs; ++i){
-  //   point pin1 = rst->nets[netIndex].pins[i];
-  //   point pin2 = rst->nets[netIndex].pins[i + 1];
+  // iterate through the segments of the net -> store best solution in segment structure
+  for(int i=0; i<rst->nets[netIndex].nroute.numSegs; ++i){
+    point pin1 = rst->nets[netIndex].pins[i];
+    point pin2 = rst->nets[netIndex].pins[i + 1];
 
-  //   int xgap = abs(pin2.x - pin1.x);
-  //   int ygap = abs(pin2.y - pin1.y);
+    int xgap = abs(pin2.x - pin1.x);
+    int ygap = abs(pin2.y - pin1.y);
     
-  //   int numedges = xgap + ygap + (dx * 2);
+    int numedges = xgap + ygap + (dx * 2);
 
-  //   // NEED TO ALLOCATE MEMORY //
-  //   iteration = iteration + 1;
+    // NEED TO ALLOCATE MEMORY //
+    iteration = iteration + 1;
 
-  //   // initialize the temporary segment to compar to current solution
-  //   segment new_seg;
-  //   new_seg.p1 = pin1;
-  //   new_seg.p2 = pin2;
-  //   new_seg.edges = (int*)calloc(numedges, sizeof(int));
+    // initialize the temporary segment to compar to current solution
+    segment new_seg;
+    new_seg.p1 = pin1;
+    new_seg.p2 = pin2;
+    new_seg.edges = (int*)calloc(numedges, sizeof(int));
 
-  //   // CASE 1 => horizontal line //
-  //   if (ygap == 0){ 
-  //     // (1.a) checking 'n' shaped segment //
-  //     new_seg.numEdges = 0; // reset new_segment
-  //     if ((pin1.y + dy) <= (rst->gy - 1)){
-  //       nxt_point = pin1;
-  //       // add edges moving up by dy to new_seg
-  //       for(int j=0; j<dy; ++j){
-  //         curr_point = nxt_point;
-  //         nxt_point.y = curr_point.y + 1;
-  //         // check if valid edge
-  //         edgeID = getEdgeID(rst, curr_point, nxt_point);
-  //         if (edgeID != -1){
-  //           // store edge and increment the total number edges in temp segment
-  //           new_seg.edges[new_seg.numEdges] = edgeID;
-  //           new_seg.numEdges = new_seg.numEdges + 1;
-  //         } else {
-  //           return -1; // tried to get invalid edge id --> out of bounds
-  //         }
-  //       }
-  //       // move left or right adding edges until nxt_point.x == pin2.x
-  //       if(pin2.x > pin1.x){ // if pin2 if right of pin1
-  //         for(int j=0; j<xgap; ++j){
-  //           curr_point = nxt_point;
-  //           nxt_point.x = curr_point.x + 1;
-  //           // check if valid edge
-  //           edgeID = getEdgeID(rst, curr_point, nxt_point);
-  //           if (edgeID != -1){
-  //             // store edge and increment the total number edges in temp segment
-  //             new_seg.edges[new_seg.numEdges] = edgeID;
-  //             new_seg.numEdges = new_seg.numEdges + 1;
-  //           } else {
-  //             return -1; // tried to get invalid edge id --> out of bounds
-  //           }
-  //         }
-  //       } else { // pin2 is left of pin 1
-  //         for(int j=0; j<xgap; ++j){
-  //           curr_point = nxt_point;
-  //           nxt_point.x = curr_point.x - 1;
-  //           // check if valid edge
-  //           edgeID = getEdgeID(rst, curr_point, nxt_point);
-  //           if (edgeID){
-  //             // store edge and increment the total number edges in temp segment
-  //             new_seg.edges[new_seg.numEdges] = edgeID;
-  //             new_seg.numEdges = new_seg.numEdges + 1;
-  //           } else {
-  //             return -1; // tried to get invalid edge id --> out of bounds
-  //           }
-  //         }
-  //       }
-  //       // add edges moving down by dy to new_seg
-  //       for(int j=0; j<dy; ++j){
-  //         curr_point = nxt_point;
-  //         nxt_point.y = curr_point.y - 1;
-  //         // check if valid edge
-  //         edgeID = getEdgeID(rst, curr_point, nxt_point);
-  //         if (edgeID != -1){
-  //           // store edge and increment the total number edges in temp segment
-  //           new_seg.edges[new_seg.numEdges] = edgeID;
-  //           new_seg.numEdges = new_seg.numEdges + 1;
-  //         } else {
-  //           return -1; // tried to get invalid edge id --> out of bounds
-  //         }
-  //       }
-  //       // compare total weight of this segment to curr solution -> replace if better
-  //       if(getSegWeight(rst, rst->nets[netIndex].nroute.segments[i]) > getSegWeight(rst, new_seg)){
-  //         rst->nets[netIndex].nroute.segments[i] = new_seg;
-  //       }
-  //     }
+    // CASE 1 => horizontal line //
+    if (ygap == 0){ 
+      // (1.a) checking 'n' shaped segment //
+      new_seg.numEdges = 0; // reset new_segment
+      if ((pin1.y + dy) <= (rst->gy - 1)){
+        nxt_point = pin1;
+        // add edges moving up by dy to new_seg
+        for(int j=0; j<dy; ++j){
+          curr_point = nxt_point;
+          nxt_point.y = curr_point.y + 1;
+          // check if valid edge
+          edgeID = getEdgeID(rst, curr_point, nxt_point);
+          if (edgeID != -1){
+            // store edge and increment the total number edges in temp segment
+            new_seg.edges[new_seg.numEdges] = edgeID;
+            new_seg.numEdges = new_seg.numEdges + 1;
+          } else {
+            return -1; // tried to get invalid edge id --> out of bounds
+          }
+        }
+        // move left or right adding edges until nxt_point.x == pin2.x
+        if(pin2.x > pin1.x){ // if pin2 if right of pin1
+          for(int j=0; j<xgap; ++j){
+            curr_point = nxt_point;
+            nxt_point.x = curr_point.x + 1;
+            // check if valid edge
+            edgeID = getEdgeID(rst, curr_point, nxt_point);
+            if (edgeID != -1){
+              // store edge and increment the total number edges in temp segment
+              new_seg.edges[new_seg.numEdges] = edgeID;
+              new_seg.numEdges = new_seg.numEdges + 1;
+            } else {
+              return -1; // tried to get invalid edge id --> out of bounds
+            }
+          }
+        } else { // pin2 is left of pin 1
+          for(int j=0; j<xgap; ++j){
+            curr_point = nxt_point;
+            nxt_point.x = curr_point.x - 1;
+            // check if valid edge
+            edgeID = getEdgeID(rst, curr_point, nxt_point);
+            if (edgeID){
+              // store edge and increment the total number edges in temp segment
+              new_seg.edges[new_seg.numEdges] = edgeID;
+              new_seg.numEdges = new_seg.numEdges + 1;
+            } else {
+              return -1; // tried to get invalid edge id --> out of bounds
+            }
+          }
+        }
+        // add edges moving down by dy to new_seg
+        for(int j=0; j<dy; ++j){
+          curr_point = nxt_point;
+          nxt_point.y = curr_point.y - 1;
+          // check if valid edge
+          edgeID = getEdgeID(rst, curr_point, nxt_point);
+          if (edgeID != -1){
+            // store edge and increment the total number edges in temp segment
+            new_seg.edges[new_seg.numEdges] = edgeID;
+            new_seg.numEdges = new_seg.numEdges + 1;
+          } else {
+            return -1; // tried to get invalid edge id --> out of bounds
+          }
+        }
+        // compare total weight of this segment to curr solution -> replace if better
+        if(getSegWeight(rst, rst->nets[netIndex].nroute.segments[i]) > getSegWeight(rst, new_seg)){
+          rst->nets[netIndex].nroute.segments[i] = new_seg;
+        }
+      }
    
-  //     // (1.b) checking 'u' shaped segment //
-  //     // new_seg.numEdges = 0; // reset new_segment
-  //     // if ((pin1.y - dy) >= 0){
-  //     //   nxt_point = pin1;
-  //     //   // add edges moving down by dy to new_seg
-  //     //   for(int j=0; j<dy; ++j){
-  //     //     curr_point = nxt_point;
-  //     //     nxt_point.y = curr_point.y - 1;
-  //     //     // check if valid edge
-  //     //     edgeID = getEdgeID(rst, curr_point, nxt_point);
-  //     //     if (edgeID != -1){
-  //     //       // store edge and increment the total number edges in temp segment
-  //     //       new_seg.edges[new_seg.numEdges] = edgeID;
-  //     //       new_seg.numEdges = new_seg.numEdges + 1;
-  //     //     } else {
-  //     //       return -1; // tried to get invalid edge id --> out of bounds
-  //     //     }
-  //     //   }
-  //     //   // move left or right adding edges until nxt_point.x == pin2.x
-  //     //   if(pin2.x > pin1.x){ // if pin2 if right of pin1
-  //     //     for(int j=0; j<xgap; ++j){
-  //     //       curr_point = nxt_point;
-  //     //       nxt_point.x = curr_point.x + 1;
-  //     //       // check if valid edge
-  //     //       edgeID = getEdgeID(rst, curr_point, nxt_point);
-  //     //       if (edgeID != -1){
-  //     //         // store edge and increment the total number edges in temp segment
-  //     //         new_seg.edges[new_seg.numEdges] = edgeID;
-  //     //         new_seg.numEdges = new_seg.numEdges + 1;
-  //     //       } else {
-  //     //         return -1; // tried to get invalid edge id --> out of bounds
-  //     //       }
-  //     //     }
-  //     //   } else { // pin2 is left of pin 1
-  //     //     for(int j=0; j<xgap; ++j){
-  //     //       curr_point = nxt_point;
-  //     //       nxt_point.x = curr_point.x - 1;
-  //     //       // check if valid edge
-  //     //       edgeID = getEdgeID(rst, curr_point, nxt_point);
-  //     //       if (getEdgeID(rst, curr_point, nxt_point) != -1){
-  //     //         // store edge and increment the total number edges in temp segment
-  //     //         new_seg.edges[new_seg.numEdges] = edgeID;
-  //     //         new_seg.numEdges = new_seg.numEdges + 1;
-  //     //       } else {
-  //     //         return -1; // tried to get invalid edge id --> out of bounds
-  //     //       }
-  //     //     }
-  //     //   }
-  //     //   // add edges moving up by dy to new_seg
-  //     //   for(int j=0; j<dy; ++j){
-  //     //     curr_point = nxt_point;
-  //     //     nxt_point.y = curr_point.y + 1;
-  //     //     // check if valid edge
-  //     //     edgeID = getEdgeID(rst, curr_point, nxt_point);
-  //     //     if (edgeID != -1){
-  //     //       // store edge and increment the total number edges in temp segment
-  //     //       new_seg.edges[new_seg.numEdges] = edgeID;
-  //     //       new_seg.numEdges = new_seg.numEdges + 1;
-  //     //     } else {
-  //     //       return -1; // tried to get invalid edge id --> out of bounds
-  //     //     }
-  //     //   }
-  //     //   // compare total weight of this segment to curr solution -> replace if better
-  //     //   if(getSegWeight(rst, rst->nets[netIndex].nroute.segments[i]) > getSegWeight(rst, new_seg)){
-  //     //     rst->nets[netIndex].nroute.segments[i] = new_seg;
-  //     //   }
-  //     // }
+      // (1.b) checking 'u' shaped segment //
+      // new_seg.numEdges = 0; // reset new_segment
+      // if ((pin1.y - dy) >= 0){
+      //   nxt_point = pin1;
+      //   // add edges moving down by dy to new_seg
+      //   for(int j=0; j<dy; ++j){
+      //     curr_point = nxt_point;
+      //     nxt_point.y = curr_point.y - 1;
+      //     // check if valid edge
+      //     edgeID = getEdgeID(rst, curr_point, nxt_point);
+      //     if (edgeID != -1){
+      //       // store edge and increment the total number edges in temp segment
+      //       new_seg.edges[new_seg.numEdges] = edgeID;
+      //       new_seg.numEdges = new_seg.numEdges + 1;
+      //     } else {
+      //       return -1; // tried to get invalid edge id --> out of bounds
+      //     }
+      //   }
+      //   // move left or right adding edges until nxt_point.x == pin2.x
+      //   if(pin2.x > pin1.x){ // if pin2 if right of pin1
+      //     for(int j=0; j<xgap; ++j){
+      //       curr_point = nxt_point;
+      //       nxt_point.x = curr_point.x + 1;
+      //       // check if valid edge
+      //       edgeID = getEdgeID(rst, curr_point, nxt_point);
+      //       if (edgeID != -1){
+      //         // store edge and increment the total number edges in temp segment
+      //         new_seg.edges[new_seg.numEdges] = edgeID;
+      //         new_seg.numEdges = new_seg.numEdges + 1;
+      //       } else {
+      //         return -1; // tried to get invalid edge id --> out of bounds
+      //       }
+      //     }
+      //   } else { // pin2 is left of pin 1
+      //     for(int j=0; j<xgap; ++j){
+      //       curr_point = nxt_point;
+      //       nxt_point.x = curr_point.x - 1;
+      //       // check if valid edge
+      //       edgeID = getEdgeID(rst, curr_point, nxt_point);
+      //       if (getEdgeID(rst, curr_point, nxt_point) != -1){
+      //         // store edge and increment the total number edges in temp segment
+      //         new_seg.edges[new_seg.numEdges] = edgeID;
+      //         new_seg.numEdges = new_seg.numEdges + 1;
+      //       } else {
+      //         return -1; // tried to get invalid edge id --> out of bounds
+      //       }
+      //     }
+      //   }
+      //   // add edges moving up by dy to new_seg
+      //   for(int j=0; j<dy; ++j){
+      //     curr_point = nxt_point;
+      //     nxt_point.y = curr_point.y + 1;
+      //     // check if valid edge
+      //     edgeID = getEdgeID(rst, curr_point, nxt_point);
+      //     if (edgeID != -1){
+      //       // store edge and increment the total number edges in temp segment
+      //       new_seg.edges[new_seg.numEdges] = edgeID;
+      //       new_seg.numEdges = new_seg.numEdges + 1;
+      //     } else {
+      //       return -1; // tried to get invalid edge id --> out of bounds
+      //     }
+      //   }
+      //   // compare total weight of this segment to curr solution -> replace if better
+      //   if(getSegWeight(rst, rst->nets[netIndex].nroute.segments[i]) > getSegWeight(rst, new_seg)){
+      //     rst->nets[netIndex].nroute.segments[i] = new_seg;
+      //   }
+      // }
     
-  //   } 
-  //   // CASE 2 => vertical line //
-  //   else if (xgap == 0){ 
-  //     // (2.a) checking 'c' shaped segment //
-  //     new_seg.numEdges = 0; // reset new_segment
-  //     if ((pin1.x - dx) >= 0){
-  //       nxt_point = pin1;
-  //       // add edges moving left by dx to new_seg
-  //       for(int j=0; j<dx; ++j){
-  //         curr_point = nxt_point;
-  //         nxt_point.x = curr_point.x - 1;
-  //         // check if valid edge
-  //         edgeID = getEdgeID(rst, curr_point, nxt_point);
-  //         if (edgeID != -1){
-  //           // store edge and increment the total number edges in temp segment
-  //           new_seg.edges[new_seg.numEdges] = edgeID;
-  //           new_seg.numEdges = new_seg.numEdges + 1;
-  //         } else {
-  //           return -1; // tried to get invalid edge id --> out of bounds
-  //         }
-  //       }
-  //       // move up or down adding edges until nxt_point.y == pin2.y
-  //       if(pin2.y > pin1.y){ // pin2 is above pin1
-  //         for(int j=0; j<ygap; ++j){
-  //           curr_point = nxt_point;
-  //           nxt_point.y = curr_point.y + 1;
-  //           // check if valid edge
-  //           edgeID = getEdgeID(rst, curr_point, nxt_point);
-  //           if (edgeID != -1){
-  //             // store edge and increment the total number edges in temp segment
-  //             new_seg.edges[new_seg.numEdges] = edgeID;
-  //             new_seg.numEdges = new_seg.numEdges + 1;
-  //           } else {
-  //             return -1; // tried to get invalid edge id --> out of bounds
-  //           }
-  //         }
-  //       } else { // pin2 is below pin 1
-  //         for(int j=0; j<ygap; ++j){
-  //           curr_point = nxt_point;
-  //           nxt_point.y = curr_point.y - 1;
-  //           // check if valid edge
-  //           edgeID = getEdgeID(rst, curr_point, nxt_point);
-  //           if (edgeID != -1){
-  //             // store edge and increment the total number edges in temp segment
-  //             new_seg.edges[new_seg.numEdges] = edgeID;
-  //             new_seg.numEdges = new_seg.numEdges + 1;
-  //           } else {
-  //             return -1; // tried to get invalid edge id --> out of bounds
-  //           }
-  //         }
-  //       }
-  //       // add edges moving right by dx to new_seg
-  //       for(int j=0; j<dx; ++j){
-  //         curr_point = nxt_point;
-  //         nxt_point.x = curr_point.x + 1;
-  //         // check if valid edge
-  //         edgeID = getEdgeID(rst, curr_point, nxt_point);
-  //         if (edgeID != -1){
-  //           // store edge and increment the total number edges in temp segment
-  //           new_seg.edges[new_seg.numEdges] = edgeID;
-  //           new_seg.numEdges = new_seg.numEdges + 1;
-  //         } else {
-  //           return -1; // tried to get invalid edge id --> out of bounds
-  //         }
-  //       }
-  //       // compare total weight of this segment to curr solution -> replace if better
-  //       if(getSegWeight(rst, rst->nets[netIndex].nroute.segments[i]) > getSegWeight(rst, new_seg)){
-  //         rst->nets[netIndex].nroute.segments[i] = new_seg;
-  //       }
-  //     }
+    } 
+    // CASE 2 => vertical line //
+    else if (xgap == 0){ 
+      // (2.a) checking 'c' shaped segment //
+      new_seg.numEdges = 0; // reset new_segment
+      if ((pin1.x - dx) >= 0){
+        nxt_point = pin1;
+        // add edges moving left by dx to new_seg
+        for(int j=0; j<dx; ++j){
+          curr_point = nxt_point;
+          nxt_point.x = curr_point.x - 1;
+          // check if valid edge
+          edgeID = getEdgeID(rst, curr_point, nxt_point);
+          if (edgeID != -1){
+            // store edge and increment the total number edges in temp segment
+            new_seg.edges[new_seg.numEdges] = edgeID;
+            new_seg.numEdges = new_seg.numEdges + 1;
+          } else {
+            return -1; // tried to get invalid edge id --> out of bounds
+          }
+        }
+        // move up or down adding edges until nxt_point.y == pin2.y
+        if(pin2.y > pin1.y){ // pin2 is above pin1
+          for(int j=0; j<ygap; ++j){
+            curr_point = nxt_point;
+            nxt_point.y = curr_point.y + 1;
+            // check if valid edge
+            edgeID = getEdgeID(rst, curr_point, nxt_point);
+            if (edgeID != -1){
+              // store edge and increment the total number edges in temp segment
+              new_seg.edges[new_seg.numEdges] = edgeID;
+              new_seg.numEdges = new_seg.numEdges + 1;
+            } else {
+              return -1; // tried to get invalid edge id --> out of bounds
+            }
+          }
+        } else { // pin2 is below pin 1
+          for(int j=0; j<ygap; ++j){
+            curr_point = nxt_point;
+            nxt_point.y = curr_point.y - 1;
+            // check if valid edge
+            edgeID = getEdgeID(rst, curr_point, nxt_point);
+            if (edgeID != -1){
+              // store edge and increment the total number edges in temp segment
+              new_seg.edges[new_seg.numEdges] = edgeID;
+              new_seg.numEdges = new_seg.numEdges + 1;
+            } else {
+              return -1; // tried to get invalid edge id --> out of bounds
+            }
+          }
+        }
+        // add edges moving right by dx to new_seg
+        for(int j=0; j<dx; ++j){
+          curr_point = nxt_point;
+          nxt_point.x = curr_point.x + 1;
+          // check if valid edge
+          edgeID = getEdgeID(rst, curr_point, nxt_point);
+          if (edgeID != -1){
+            // store edge and increment the total number edges in temp segment
+            new_seg.edges[new_seg.numEdges] = edgeID;
+            new_seg.numEdges = new_seg.numEdges + 1;
+          } else {
+            return -1; // tried to get invalid edge id --> out of bounds
+          }
+        }
+        // compare total weight of this segment to curr solution -> replace if better
+        if(getSegWeight(rst, rst->nets[netIndex].nroute.segments[i]) > getSegWeight(rst, new_seg)){
+          rst->nets[netIndex].nroute.segments[i] = new_seg;
+        }
+      }
    
-  //     // (2.b) checking horizontally mirrored 'c' shaped segment //
-  //     // new_seg.numEdges = 0; // reset new_segment
-  //     // if ((pin1.x + dx) <= (rst->gx - 1)){
-  //     //   nxt_point = pin1;
-  //     //   // add edges moving right by dx to new_seg
-  //     //   for(int j=0; j<dx; ++j){
-  //     //     curr_point = nxt_point;
-  //     //     nxt_point.x = curr_point.x + 1;
-  //     //     // check if valid edge
-  //     //     edgeID = getEdgeID(rst, curr_point, nxt_point);
-  //     //     if (edgeID != -1){
-  //     //       // store edge and increment the total number edges in temp segment
-  //     //       new_seg.edges[new_seg.numEdges] = edgeID;
-  //     //       new_seg.numEdges = new_seg.numEdges + 1;
-  //     //     } else {
-  //     //       return -1; // tried to get invalid edge id --> out of bounds
-  //     //     }
-  //     //   }
-  //     //   // move up or down adding edges until nxt_point.y == pin2.y
-  //     //   if(pin2.y > pin1.y){ // pin2 is above pin1
-  //     //     for(int j=0; j<ygap; ++j){
-  //     //       curr_point = nxt_point;
-  //     //       nxt_point.y = curr_point.y + 1;
-  //     //       // check if valid edge
-  //     //       edgeID = getEdgeID(rst, curr_point, nxt_point);
-  //     //       if (edgeID != -1){
-  //     //         // store edge and increment the total number edges in temp segment
-  //     //         new_seg.edges[new_seg.numEdges] = edgeID;
-  //     //         new_seg.numEdges = new_seg.numEdges + 1;
-  //     //       } else {
-  //     //         return -1; // tried to get invalid edge id --> out of bounds
-  //     //       }
-  //     //     }
-  //     //   } else { // pin2 is below pin 1
-  //     //     for(int j=0; j<ygap; ++j){
-  //     //       curr_point = nxt_point;
-  //     //       nxt_point.y = curr_point.y - 1;
-  //     //       // check if valid edge
-  //     //       edgeID = getEdgeID(rst, curr_point, nxt_point);
-  //     //       if (edgeID != -1){
-  //     //         // store edge and increment the total number edges in temp segment
-  //     //         new_seg.edges[new_seg.numEdges] = edgeID;
-  //     //         new_seg.numEdges = new_seg.numEdges + 1;
-  //     //       } else {
-  //     //         return -1; // tried to get invalid edge id --> out of bounds
-  //     //       }
-  //     //     }
-  //     //   }
-  //     //   // add edges moving right by dx to new_seg
-  //     //   for(int j=0; j<dx; ++j){
-  //     //     curr_point = nxt_point;
-  //     //     nxt_point.x = curr_point.x - 1;
-  //     //     // check if valid edge
-  //     //     edgeID = getEdgeID(rst, curr_point, nxt_point);
-  //     //     if (edgeID != -1){
-  //     //       // store edge and increment the total number edges in temp segment
-  //     //       new_seg.edges[new_seg.numEdges] = edgeID;
-  //     //       new_seg.numEdges = new_seg.numEdges + 1;
-  //     //     } else {
-  //     //       return -1; // tried to get invalid edge id --> out of bounds
-  //     //     }
-  //     //   }
-  //     //   // compare total weight of this segment to curr solution -> replace if better
-  //     //   if(getSegWeight(rst, rst->nets[netIndex].nroute.segments[i]) > getSegWeight(rst, new_seg)){
-  //     //     rst->nets[netIndex].nroute.segments[i] = new_seg;
-  //     //   }
-  //     // }
+      // (2.b) checking horizontally mirrored 'c' shaped segment //
+      // new_seg.numEdges = 0; // reset new_segment
+      // if ((pin1.x + dx) <= (rst->gx - 1)){
+      //   nxt_point = pin1;
+      //   // add edges moving right by dx to new_seg
+      //   for(int j=0; j<dx; ++j){
+      //     curr_point = nxt_point;
+      //     nxt_point.x = curr_point.x + 1;
+      //     // check if valid edge
+      //     edgeID = getEdgeID(rst, curr_point, nxt_point);
+      //     if (edgeID != -1){
+      //       // store edge and increment the total number edges in temp segment
+      //       new_seg.edges[new_seg.numEdges] = edgeID;
+      //       new_seg.numEdges = new_seg.numEdges + 1;
+      //     } else {
+      //       return -1; // tried to get invalid edge id --> out of bounds
+      //     }
+      //   }
+      //   // move up or down adding edges until nxt_point.y == pin2.y
+      //   if(pin2.y > pin1.y){ // pin2 is above pin1
+      //     for(int j=0; j<ygap; ++j){
+      //       curr_point = nxt_point;
+      //       nxt_point.y = curr_point.y + 1;
+      //       // check if valid edge
+      //       edgeID = getEdgeID(rst, curr_point, nxt_point);
+      //       if (edgeID != -1){
+      //         // store edge and increment the total number edges in temp segment
+      //         new_seg.edges[new_seg.numEdges] = edgeID;
+      //         new_seg.numEdges = new_seg.numEdges + 1;
+      //       } else {
+      //         return -1; // tried to get invalid edge id --> out of bounds
+      //       }
+      //     }
+      //   } else { // pin2 is below pin 1
+      //     for(int j=0; j<ygap; ++j){
+      //       curr_point = nxt_point;
+      //       nxt_point.y = curr_point.y - 1;
+      //       // check if valid edge
+      //       edgeID = getEdgeID(rst, curr_point, nxt_point);
+      //       if (edgeID != -1){
+      //         // store edge and increment the total number edges in temp segment
+      //         new_seg.edges[new_seg.numEdges] = edgeID;
+      //         new_seg.numEdges = new_seg.numEdges + 1;
+      //       } else {
+      //         return -1; // tried to get invalid edge id --> out of bounds
+      //       }
+      //     }
+      //   }
+      //   // add edges moving right by dx to new_seg
+      //   for(int j=0; j<dx; ++j){
+      //     curr_point = nxt_point;
+      //     nxt_point.x = curr_point.x - 1;
+      //     // check if valid edge
+      //     edgeID = getEdgeID(rst, curr_point, nxt_point);
+      //     if (edgeID != -1){
+      //       // store edge and increment the total number edges in temp segment
+      //       new_seg.edges[new_seg.numEdges] = edgeID;
+      //       new_seg.numEdges = new_seg.numEdges + 1;
+      //     } else {
+      //       return -1; // tried to get invalid edge id --> out of bounds
+      //     }
+      //   }
+      //   // compare total weight of this segment to curr solution -> replace if better
+      //   if(getSegWeight(rst, rst->nets[netIndex].nroute.segments[i]) > getSegWeight(rst, new_seg)){
+      //     rst->nets[netIndex].nroute.segments[i] = new_seg;
+      //   }
+      // }
     
-  //   } 
-  //   // CASE 3 => not a line //
-  //   else { 
-  //     // (3.a) checking 'c' shaped segment //
-  //     // new_seg.numEdges = 0; // reset new_segment
-  //     // if ((min(pin1.x, pin2.x) - dx) >= 0){
-  //     //   nxt_point = pin1;
-  //     //   // add edges moving left by dx to new_seg
-  //     //   for(int j=0; j<dx+max(0,(pin1.x-pin2.x)); ++j){
-  //     //     curr_point = nxt_point;
-  //     //     nxt_point.x = curr_point.x - 1;
-  //     //     // check if valid edge
-  //     //     edgeID = getEdgeID(rst, curr_point, nxt_point);
-  //     //     if (edgeID != -1){
-  //     //       // store edge and increment the total number edges in temp segment
-  //     //       new_seg.edges[new_seg.numEdges] = edgeID;
-  //     //       new_seg.numEdges = new_seg.numEdges + 1;
-  //     //     } else {
-  //     //       return -1; // tried to get invalid edge id --> out of bounds
-  //     //     }
-  //     //   }
-  //     //   // move up or down adding edges until nxt_point.y == pin2.y
-  //     //   if(pin2.y > pin1.y){ // pin2 is above pin1
-  //     //     for(int j=0; j<ygap; ++j){
-  //     //       curr_point = nxt_point;
-  //     //       nxt_point.y = curr_point.y + 1;
-  //     //       // check if valid edge
-  //     //       edgeID = getEdgeID(rst, curr_point, nxt_point);
-  //     //       if (edgeID != -1){
-  //     //         // store edge and increment the total number edges in temp segment
-  //     //         new_seg.edges[new_seg.numEdges] = edgeID;
-  //     //         new_seg.numEdges = new_seg.numEdges + 1;
-  //     //       } else {
-  //     //         return -1; // tried to get invalid edge id --> out of bounds
-  //     //       }
-  //     //     }
-  //     //   } else { // pin2 is below pin 1
-  //     //     for(int j=0; j<ygap; ++j){
-  //     //       curr_point = nxt_point;
-  //     //       nxt_point.y = curr_point.y - 1;
-  //     //       // check if valid edge
-  //     //       edgeID = getEdgeID(rst, curr_point, nxt_point);
-  //     //       if (edgeID != -1){
-  //     //         // store edge and increment the total number edges in temp segment
-  //     //         new_seg.edges[new_seg.numEdges] = edgeID;
-  //     //         new_seg.numEdges = new_seg.numEdges + 1;
-  //     //       } else {
-  //     //         return -1; // tried to get invalid edge id --> out of bounds
-  //     //       }
-  //     //     }
-  //     //   }
-  //     //   // add edges moving right by dx to new_seg
-  //     //   for(int j=0; j<dx+max(0,(pin2.x-pin1.x)); ++j){
-  //     //     curr_point = nxt_point;
-  //     //     nxt_point.x = curr_point.x + 1;
-  //     //     // check if valid edge
-  //     //     edgeID = getEdgeID(rst, curr_point, nxt_point);
-  //     //     if (edgeID != -1){
-  //     //       // store edge and increment the total number edges in temp segment
-  //     //       new_seg.edges[new_seg.numEdges] = edgeID;
-  //     //       new_seg.numEdges = new_seg.numEdges + 1;
-  //     //     } else {
-  //     //       return -1; // tried to get invalid edge id --> out of bounds
-  //     //     }
-  //     //   }
-  //     //   // compare total weight of this segment to curr solution -> replace if better
-  //     //   if(getSegWeight(rst, rst->nets[netIndex].nroute.segments[i]) > getSegWeight(rst, new_seg)){
-  //     //     rst->nets[netIndex].nroute.segments[i] = new_seg;
-  //     //   }
-  //     // }
+    } 
+    // CASE 3 => not a line //
+    else { 
+      // (3.a) checking 'c' shaped segment //
+      // new_seg.numEdges = 0; // reset new_segment
+      // if ((min(pin1.x, pin2.x) - dx) >= 0){
+      //   nxt_point = pin1;
+      //   // add edges moving left by dx to new_seg
+      //   for(int j=0; j<dx+max(0,(pin1.x-pin2.x)); ++j){
+      //     curr_point = nxt_point;
+      //     nxt_point.x = curr_point.x - 1;
+      //     // check if valid edge
+      //     edgeID = getEdgeID(rst, curr_point, nxt_point);
+      //     if (edgeID != -1){
+      //       // store edge and increment the total number edges in temp segment
+      //       new_seg.edges[new_seg.numEdges] = edgeID;
+      //       new_seg.numEdges = new_seg.numEdges + 1;
+      //     } else {
+      //       return -1; // tried to get invalid edge id --> out of bounds
+      //     }
+      //   }
+      //   // move up or down adding edges until nxt_point.y == pin2.y
+      //   if(pin2.y > pin1.y){ // pin2 is above pin1
+      //     for(int j=0; j<ygap; ++j){
+      //       curr_point = nxt_point;
+      //       nxt_point.y = curr_point.y + 1;
+      //       // check if valid edge
+      //       edgeID = getEdgeID(rst, curr_point, nxt_point);
+      //       if (edgeID != -1){
+      //         // store edge and increment the total number edges in temp segment
+      //         new_seg.edges[new_seg.numEdges] = edgeID;
+      //         new_seg.numEdges = new_seg.numEdges + 1;
+      //       } else {
+      //         return -1; // tried to get invalid edge id --> out of bounds
+      //       }
+      //     }
+      //   } else { // pin2 is below pin 1
+      //     for(int j=0; j<ygap; ++j){
+      //       curr_point = nxt_point;
+      //       nxt_point.y = curr_point.y - 1;
+      //       // check if valid edge
+      //       edgeID = getEdgeID(rst, curr_point, nxt_point);
+      //       if (edgeID != -1){
+      //         // store edge and increment the total number edges in temp segment
+      //         new_seg.edges[new_seg.numEdges] = edgeID;
+      //         new_seg.numEdges = new_seg.numEdges + 1;
+      //       } else {
+      //         return -1; // tried to get invalid edge id --> out of bounds
+      //       }
+      //     }
+      //   }
+      //   // add edges moving right by dx to new_seg
+      //   for(int j=0; j<dx+max(0,(pin2.x-pin1.x)); ++j){
+      //     curr_point = nxt_point;
+      //     nxt_point.x = curr_point.x + 1;
+      //     // check if valid edge
+      //     edgeID = getEdgeID(rst, curr_point, nxt_point);
+      //     if (edgeID != -1){
+      //       // store edge and increment the total number edges in temp segment
+      //       new_seg.edges[new_seg.numEdges] = edgeID;
+      //       new_seg.numEdges = new_seg.numEdges + 1;
+      //     } else {
+      //       return -1; // tried to get invalid edge id --> out of bounds
+      //     }
+      //   }
+      //   // compare total weight of this segment to curr solution -> replace if better
+      //   if(getSegWeight(rst, rst->nets[netIndex].nroute.segments[i]) > getSegWeight(rst, new_seg)){
+      //     rst->nets[netIndex].nroute.segments[i] = new_seg;
+      //   }
+      // }
    
-  //     // (3.b) checking horizontally mirrored 'c' shaped segment //
-  //     // new_seg.numEdges = 0; // reset new_segment
-  //     // if ((max(pin1.x, pin2.x) + dx) <= (rst->gx - 1)){
-  //     //   nxt_point = pin1;
-  //     //   // add edges moving right by dx to new_seg
-  //     //   for(int j=0; j<dx+max(0,(pin2.x-pin1.x)); ++j){
-  //     //     curr_point = nxt_point;
-  //     //     nxt_point.x = curr_point.x + 1;
-  //     //     // check if valid edge
-  //     //     edgeID = getEdgeID(rst, curr_point, nxt_point);
-  //     //     if (edgeID != -1){
-  //     //       // store edge and increment the total number edges in temp segment
-  //     //       new_seg.edges[new_seg.numEdges] = edgeID;
-  //     //       new_seg.numEdges = new_seg.numEdges + 1;
-  //     //     } else {
-  //     //       return -1; // tried to get invalid edge id --> out of bounds
-  //     //     }
-  //     //   }
-  //     //   // move up or down adding edges until nxt_point.y == pin2.y
-  //     //   if(pin2.y > pin1.y){ // pin2 is above pin1
-  //     //     for(int j=0; j<ygap; ++j){
-  //     //       curr_point = nxt_point;
-  //     //       nxt_point.y = curr_point.y + 1;
-  //     //       // check if valid edge
-  //     //       edgeID = getEdgeID(rst, curr_point, nxt_point);
-  //     //       if (edgeID != -1){
-  //     //         // store edge and increment the total number edges in temp segment
-  //     //         new_seg.edges[new_seg.numEdges] = edgeID;
-  //     //         new_seg.numEdges = new_seg.numEdges + 1;
-  //     //       } else {
-  //     //         return -1; // tried to get invalid edge id --> out of bounds
-  //     //       }
-  //     //     }
-  //     //   } else { // pin2 is below pin 1
-  //     //     for(int j=0; j<ygap; ++j){
-  //     //       curr_point = nxt_point;
-  //     //       nxt_point.y = curr_point.y - 1;
-  //     //       // check if valid edge
-  //     //       edgeID = getEdgeID(rst, curr_point, nxt_point);
-  //     //       if (edgeID != -1){
-  //     //         // store edge and increment the total number edges in temp segment
-  //     //         new_seg.edges[new_seg.numEdges] = edgeID;
-  //     //         new_seg.numEdges = new_seg.numEdges + 1;
-  //     //       } else {
-  //     //         return -1; // tried to get invalid edge id --> out of bounds
-  //     //       }
-  //     //     }
-  //     //   }
-  //     //   // add edges moving right by dx to new_seg
-  //     //   for(int j=0; j<dx+max(0,(pin1.x-pin2.x)); ++j){
-  //     //     curr_point = nxt_point;
-  //     //     nxt_point.x = curr_point.x - 1;
-  //     //     // check if valid edge
-  //     //     edgeID = getEdgeID(rst, curr_point, nxt_point);
-  //     //     if (edgeID != -1){
-  //     //       // store edge and increment the total number edges in temp segment
-  //     //       new_seg.edges[new_seg.numEdges] = edgeID;
-  //     //       new_seg.numEdges = new_seg.numEdges + 1;
-  //     //     } else {
-  //     //       return -1; // tried to get invalid edge id --> out of bounds
-  //     //     }
-  //     //   }
-  //     //   // compare total weight of this segment to curr solution -> replace if better
-  //     //   if(getSegWeight(rst, rst->nets[netIndex].nroute.segments[i]) > getSegWeight(rst, new_seg)){
-  //     //     rst->nets[netIndex].nroute.segments[i] = new_seg;
-  //     //   }
-  //     // }
+      // (3.b) checking horizontally mirrored 'c' shaped segment //
+      // new_seg.numEdges = 0; // reset new_segment
+      // if ((max(pin1.x, pin2.x) + dx) <= (rst->gx - 1)){
+      //   nxt_point = pin1;
+      //   // add edges moving right by dx to new_seg
+      //   for(int j=0; j<dx+max(0,(pin2.x-pin1.x)); ++j){
+      //     curr_point = nxt_point;
+      //     nxt_point.x = curr_point.x + 1;
+      //     // check if valid edge
+      //     edgeID = getEdgeID(rst, curr_point, nxt_point);
+      //     if (edgeID != -1){
+      //       // store edge and increment the total number edges in temp segment
+      //       new_seg.edges[new_seg.numEdges] = edgeID;
+      //       new_seg.numEdges = new_seg.numEdges + 1;
+      //     } else {
+      //       return -1; // tried to get invalid edge id --> out of bounds
+      //     }
+      //   }
+      //   // move up or down adding edges until nxt_point.y == pin2.y
+      //   if(pin2.y > pin1.y){ // pin2 is above pin1
+      //     for(int j=0; j<ygap; ++j){
+      //       curr_point = nxt_point;
+      //       nxt_point.y = curr_point.y + 1;
+      //       // check if valid edge
+      //       edgeID = getEdgeID(rst, curr_point, nxt_point);
+      //       if (edgeID != -1){
+      //         // store edge and increment the total number edges in temp segment
+      //         new_seg.edges[new_seg.numEdges] = edgeID;
+      //         new_seg.numEdges = new_seg.numEdges + 1;
+      //       } else {
+      //         return -1; // tried to get invalid edge id --> out of bounds
+      //       }
+      //     }
+      //   } else { // pin2 is below pin 1
+      //     for(int j=0; j<ygap; ++j){
+      //       curr_point = nxt_point;
+      //       nxt_point.y = curr_point.y - 1;
+      //       // check if valid edge
+      //       edgeID = getEdgeID(rst, curr_point, nxt_point);
+      //       if (edgeID != -1){
+      //         // store edge and increment the total number edges in temp segment
+      //         new_seg.edges[new_seg.numEdges] = edgeID;
+      //         new_seg.numEdges = new_seg.numEdges + 1;
+      //       } else {
+      //         return -1; // tried to get invalid edge id --> out of bounds
+      //       }
+      //     }
+      //   }
+      //   // add edges moving right by dx to new_seg
+      //   for(int j=0; j<dx+max(0,(pin1.x-pin2.x)); ++j){
+      //     curr_point = nxt_point;
+      //     nxt_point.x = curr_point.x - 1;
+      //     // check if valid edge
+      //     edgeID = getEdgeID(rst, curr_point, nxt_point);
+      //     if (edgeID != -1){
+      //       // store edge and increment the total number edges in temp segment
+      //       new_seg.edges[new_seg.numEdges] = edgeID;
+      //       new_seg.numEdges = new_seg.numEdges + 1;
+      //     } else {
+      //       return -1; // tried to get invalid edge id --> out of bounds
+      //     }
+      //   }
+      //   // compare total weight of this segment to curr solution -> replace if better
+      //   if(getSegWeight(rst, rst->nets[netIndex].nroute.segments[i]) > getSegWeight(rst, new_seg)){
+      //     rst->nets[netIndex].nroute.segments[i] = new_seg;
+      //   }
+      // }
  
-  //     // (3.c) checking 'n' shaped segment //
-  //     // new_seg.numEdges = 0; // reset new_segment
-  //     // if ((max(pin1.y, pin2.y) + dy) <= (rst->gy - 1)){
-  //     //   nxt_point = pin1;
-  //     //   // add edges moving up by dy to new_seg
-  //     //   for(int j=0; j<dy+max(0,(pin2.y-pin1.y)); ++j){
-  //     //     curr_point = nxt_point;
-  //     //     nxt_point.y = curr_point.y + 1;
-  //     //     // check if valid edge
-  //     //     edgeID = getEdgeID(rst, curr_point, nxt_point);
-  //     //     if (edgeID != -1){
-  //     //       // store edge and increment the total number edges in temp segment
-  //     //       new_seg.edges[new_seg.numEdges] = edgeID;
-  //     //       new_seg.numEdges = new_seg.numEdges + 1;
-  //     //     } else {
-  //     //       return -1; // tried to get invalid edge id --> out of bounds
-  //     //     }
-  //     //   }
-  //     //   // move left or right adding edges until nxt_point.x == pin2.x
-  //     //   if(pin2.x > pin1.x){ // if pin2 if right of pin1
-  //     //     for(int j=0; j<xgap; ++j){
-  //     //       curr_point = nxt_point;
-  //     //       nxt_point.x = curr_point.x + 1;
-  //     //       // check if valid edge
-  //     //       edgeID = getEdgeID(rst, curr_point, nxt_point);
-  //     //       if (edgeID != -1){
-  //     //         // store edge and increment the total number edges in temp segment
-  //     //         new_seg.edges[new_seg.numEdges] = edgeID;
-  //     //         new_seg.numEdges = new_seg.numEdges + 1;
-  //     //       } else {
-  //     //         return -1; // tried to get invalid edge id --> out of bounds
-  //     //       }
-  //     //     }
-  //     //   } else { // pin2 is left of pin 1
-  //     //     for(int j=0; j<xgap; ++j){
-  //     //       curr_point = nxt_point;
-  //     //       nxt_point.x = curr_point.x - 1;
-  //     //       // check if valid edge
-  //     //       edgeID = getEdgeID(rst, curr_point, nxt_point);
-  //     //       if (edgeID != -1){
-  //     //         // store edge and increment the total number edges in temp segment
-  //     //         new_seg.edges[new_seg.numEdges] = edgeID;
-  //     //         new_seg.numEdges = new_seg.numEdges + 1;
-  //     //       } else {
-  //     //         return -1; // tried to get invalid edge id --> out of bounds
-  //     //       }
-  //     //     }
-  //     //   }
-  //     //   // add edges moving down by dy to new_seg
-  //     //   for(int j=0; j<dy+max(0,(pin1.y-pin2.y)); ++j){
-  //     //     curr_point = nxt_point;
-  //     //     nxt_point.y = curr_point.y - 1;
-  //     //     // check if valid edge
-  //     //     edgeID = getEdgeID(rst, curr_point, nxt_point);
-  //     //     if (edgeID != -1){
-  //     //       // store edge and increment the total number edges in temp segment
-  //     //       new_seg.edges[new_seg.numEdges] = edgeID;
-  //     //       new_seg.numEdges = new_seg.numEdges + 1;
-  //     //     } else {
-  //     //       return -1; // tried to get invalid edge id --> out of bounds
-  //     //     }
-  //     //   }
-  //     //   // compare total weight of this segment to curr solution -> replace if better
-  //     //   if(getSegWeight(rst, rst->nets[netIndex].nroute.segments[i]) > getSegWeight(rst, new_seg)){
-  //     //      rst->nets[netIndex].nroute.segments[i] = new_seg;
-  //     //   }
-  //     // }
+      // (3.c) checking 'n' shaped segment //
+      // new_seg.numEdges = 0; // reset new_segment
+      // if ((max(pin1.y, pin2.y) + dy) <= (rst->gy - 1)){
+      //   nxt_point = pin1;
+      //   // add edges moving up by dy to new_seg
+      //   for(int j=0; j<dy+max(0,(pin2.y-pin1.y)); ++j){
+      //     curr_point = nxt_point;
+      //     nxt_point.y = curr_point.y + 1;
+      //     // check if valid edge
+      //     edgeID = getEdgeID(rst, curr_point, nxt_point);
+      //     if (edgeID != -1){
+      //       // store edge and increment the total number edges in temp segment
+      //       new_seg.edges[new_seg.numEdges] = edgeID;
+      //       new_seg.numEdges = new_seg.numEdges + 1;
+      //     } else {
+      //       return -1; // tried to get invalid edge id --> out of bounds
+      //     }
+      //   }
+      //   // move left or right adding edges until nxt_point.x == pin2.x
+      //   if(pin2.x > pin1.x){ // if pin2 if right of pin1
+      //     for(int j=0; j<xgap; ++j){
+      //       curr_point = nxt_point;
+      //       nxt_point.x = curr_point.x + 1;
+      //       // check if valid edge
+      //       edgeID = getEdgeID(rst, curr_point, nxt_point);
+      //       if (edgeID != -1){
+      //         // store edge and increment the total number edges in temp segment
+      //         new_seg.edges[new_seg.numEdges] = edgeID;
+      //         new_seg.numEdges = new_seg.numEdges + 1;
+      //       } else {
+      //         return -1; // tried to get invalid edge id --> out of bounds
+      //       }
+      //     }
+      //   } else { // pin2 is left of pin 1
+      //     for(int j=0; j<xgap; ++j){
+      //       curr_point = nxt_point;
+      //       nxt_point.x = curr_point.x - 1;
+      //       // check if valid edge
+      //       edgeID = getEdgeID(rst, curr_point, nxt_point);
+      //       if (edgeID != -1){
+      //         // store edge and increment the total number edges in temp segment
+      //         new_seg.edges[new_seg.numEdges] = edgeID;
+      //         new_seg.numEdges = new_seg.numEdges + 1;
+      //       } else {
+      //         return -1; // tried to get invalid edge id --> out of bounds
+      //       }
+      //     }
+      //   }
+      //   // add edges moving down by dy to new_seg
+      //   for(int j=0; j<dy+max(0,(pin1.y-pin2.y)); ++j){
+      //     curr_point = nxt_point;
+      //     nxt_point.y = curr_point.y - 1;
+      //     // check if valid edge
+      //     edgeID = getEdgeID(rst, curr_point, nxt_point);
+      //     if (edgeID != -1){
+      //       // store edge and increment the total number edges in temp segment
+      //       new_seg.edges[new_seg.numEdges] = edgeID;
+      //       new_seg.numEdges = new_seg.numEdges + 1;
+      //     } else {
+      //       return -1; // tried to get invalid edge id --> out of bounds
+      //     }
+      //   }
+      //   // compare total weight of this segment to curr solution -> replace if better
+      //   if(getSegWeight(rst, rst->nets[netIndex].nroute.segments[i]) > getSegWeight(rst, new_seg)){
+      //      rst->nets[netIndex].nroute.segments[i] = new_seg;
+      //   }
+      // }
     
-  //     // (3.d) checking 'u' shaped segment //
-  //     new_seg.numEdges = 0; // reset new_segment
-  //     if ((min(pin1.y, pin2.y) - dy) >= 0){
-  //       nxt_point = pin1;
-  //       // add edges moving down by dy to new_seg
-  //       for(int j=0; j<dy+max(0,(pin1.y-pin2.y)); ++j){
-  //         curr_point = nxt_point;
-  //         nxt_point.y = curr_point.y - 1;
-  //         // check if valid edge
-  //         edgeID = getEdgeID(rst, curr_point, nxt_point);
-  //         if (edgeID != -1){
-  //           // store edge and increment the total number edges in temp segment
-  //           new_seg.edges[new_seg.numEdges] = edgeID;
-  //           new_seg.numEdges = new_seg.numEdges + 1;
-  //         } else {
-  //           return -1; // tried to get invalid edge id --> out of bounds
-  //         }
-  //       }
-  //       // move left or right adding edges until nxt_point.x == pin2.x
-  //       if(pin2.x > pin1.x){ // if pin2 if right of pin1
-  //         for(int j=0; j<xgap; ++j){
-  //           curr_point = nxt_point;
-  //           nxt_point.x = curr_point.x + 1;
-  //           // check if valid edge
-  //           edgeID = getEdgeID(rst, curr_point, nxt_point);
-  //           if (edgeID != -1){
-  //             // store edge and increment the total number edges in temp segment
-  //             new_seg.edges[new_seg.numEdges] = edgeID;
-  //             new_seg.numEdges = new_seg.numEdges + 1;
-  //           } else {
-  //             return -1; // tried to get invalid edge id --> out of bounds
-  //           }
-  //         }
-  //       } else { // pin2 is left of pin 1
-  //         for(int j=0; j<xgap; ++j){
-  //           curr_point = nxt_point;
-  //           nxt_point.x = curr_point.x - 1;
-  //           // check if valid edge
-  //           edgeID = getEdgeID(rst, curr_point, nxt_point);
-  //           if (edgeID != -1){
-  //             // store edge and increment the total number edges in temp segment
-  //             new_seg.edges[new_seg.numEdges] = edgeID;
-  //             new_seg.numEdges = new_seg.numEdges + 1;
-  //           } else {
-  //             return -1; // tried to get invalid edge id --> out of bounds
-  //           }
-  //         }
-  //       }
-  //       // add edges moving up by dy to new_seg
-  //       for(int j=0; j<dy+max(0,(pin2.y-pin1.y)); ++j){
-  //         curr_point = nxt_point;
-  //         nxt_point.y = curr_point.y + 1;
-  //         // check if valid edge
-  //         edgeID = getEdgeID(rst, curr_point, nxt_point);
-  //         if (edgeID != -1){
-  //           // store edge and increment the total number edges in temp segment
-  //           new_seg.edges[new_seg.numEdges] = edgeID;
-  //           new_seg.numEdges = new_seg.numEdges + 1;
-  //         } else {
-  //           return -1; // tried to get invalid edge id --> out of bounds
-  //         }
-  //       }
-  //       // compare total weight of this segment to curr solution -> replace if better
-  //       if(getSegWeight(rst, rst->nets[netIndex].nroute.segments[i]) > getSegWeight(rst, new_seg)){
-  //         rst->nets[netIndex].nroute.segments[i] = new_seg;
-  //         // iterate through edges in new_seg and increment ... ect
-  //       }
-  //     }
-  //   }
-  // free(new_seg.edges);
-  // }
+      // (3.d) checking 'u' shaped segment //
+      new_seg.numEdges = 0; // reset new_segment
+      if ((min(pin1.y, pin2.y) - dy) >= 0){
+        nxt_point = pin1;
+        // add edges moving down by dy to new_seg
+        for(int j=0; j<dy+max(0,(pin1.y-pin2.y)); ++j){
+          curr_point = nxt_point;
+          nxt_point.y = curr_point.y - 1;
+          // check if valid edge
+          edgeID = getEdgeID(rst, curr_point, nxt_point);
+          if (edgeID != -1){
+            // store edge and increment the total number edges in temp segment
+            new_seg.edges[new_seg.numEdges] = edgeID;
+            new_seg.numEdges = new_seg.numEdges + 1;
+          } else {
+            return -1; // tried to get invalid edge id --> out of bounds
+          }
+        }
+        // move left or right adding edges until nxt_point.x == pin2.x
+        if(pin2.x > pin1.x){ // if pin2 if right of pin1
+          for(int j=0; j<xgap; ++j){
+            curr_point = nxt_point;
+            nxt_point.x = curr_point.x + 1;
+            // check if valid edge
+            edgeID = getEdgeID(rst, curr_point, nxt_point);
+            if (edgeID != -1){
+              // store edge and increment the total number edges in temp segment
+              new_seg.edges[new_seg.numEdges] = edgeID;
+              new_seg.numEdges = new_seg.numEdges + 1;
+            } else {
+              return -1; // tried to get invalid edge id --> out of bounds
+            }
+          }
+        } else { // pin2 is left of pin 1
+          for(int j=0; j<xgap; ++j){
+            curr_point = nxt_point;
+            nxt_point.x = curr_point.x - 1;
+            // check if valid edge
+            edgeID = getEdgeID(rst, curr_point, nxt_point);
+            if (edgeID != -1){
+              // store edge and increment the total number edges in temp segment
+              new_seg.edges[new_seg.numEdges] = edgeID;
+              new_seg.numEdges = new_seg.numEdges + 1;
+            } else {
+              return -1; // tried to get invalid edge id --> out of bounds
+            }
+          }
+        }
+        // add edges moving up by dy to new_seg
+        for(int j=0; j<dy+max(0,(pin2.y-pin1.y)); ++j){
+          curr_point = nxt_point;
+          nxt_point.y = curr_point.y + 1;
+          // check if valid edge
+          edgeID = getEdgeID(rst, curr_point, nxt_point);
+          if (edgeID != -1){
+            // store edge and increment the total number edges in temp segment
+            new_seg.edges[new_seg.numEdges] = edgeID;
+            new_seg.numEdges = new_seg.numEdges + 1;
+          } else {
+            return -1; // tried to get invalid edge id --> out of bounds
+          }
+        }
+        // compare total weight of this segment to curr solution -> replace if better
+        if(getSegWeight(rst, rst->nets[netIndex].nroute.segments[i]) > getSegWeight(rst, new_seg)){
+          rst->nets[netIndex].nroute.segments[i] = new_seg;
+          // iterate through edges in new_seg and increment ... ect
+        }
+      }
+    }
+  free(new_seg.edges);
+  }
   return 0;
 }
 
