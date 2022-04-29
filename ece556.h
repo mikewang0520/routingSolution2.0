@@ -82,7 +82,6 @@ typedef struct
   int *edgeUtils;	/* array of edge utilizations */
   int *edgeHistories;   /* index = edgeID, value = history value */
   int *edgeWeights;     /* index = edgeID, value = edge weight */
-  
 } routingInst ;
 
 
@@ -124,7 +123,7 @@ int getEdgeWeight(routingInst *rst, int edgeID);
 */
 int getSegWeight(routingInst *rst, segment &currSeg);
 
-
+  
 /* int getNetCost(routingInst *rst, net currNet)
    This function calculates the cost of a single net.
 
@@ -134,7 +133,7 @@ int getSegWeight(routingInst *rst, segment &currSeg);
 */
 int getNetCost(routingInst *rst, net &currNet);
 
-
+  
 /* int getTotalCost(routingInst *rst)
    This function calculates the total cost of the
    routing solution.
