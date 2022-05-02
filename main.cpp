@@ -10,7 +10,7 @@
 #define TIMESTAMPS 1
 #define ASCII_ZERO 48
 #define MAX_RUNTIME_MINS 15
-#define MAX_PENALIZED_RUNTIME_MINS 20
+#define MAX_PENALIZED_RUNTIME_MINS 15
 
 // CITED RESOURCES:
 // Command Line Parsing - https://www.gnu.org/software/libc/manual/html_node/Example-of-Getopt.html
@@ -93,7 +93,7 @@ main(int argc, char **argv)
 
   bool outOfTime = 0;
   bool stop_flag = 0;
-  //if (useNetD != 0 || useNetO != 0) {
+  if (useNetD != 0 || useNetO != 0) {
     printf("STARTING RRR...\n");
     auto start = chrono::steady_clock::now(); // starting time!
     auto max_runtime = chrono::steady_clock::now(); // max_runtime is based on the FIRST runtime. This might not always be true...
@@ -104,7 +104,7 @@ main(int argc, char **argv)
       auto cycleStart = chrono::steady_clock::now(); // time of starting this cycle
 
       // print starting time
-      if (TIMESTAMPS) printf("RRR Start Cycle %d: %ld minutes %ld seconds\n", RRR_cycles, chrono::duration_cast<chrono::seconds>(cycleStart - start).count() / 60, chrono::duration_cast<chrono::seconds>(cycleStart - start).count() % 60);
+      if (TIMESTAMPS) printf("\nRRR Start Cycle %d: %ld minutes %ld seconds\n", RRR_cycles, chrono::duration_cast<chrono::seconds>(cycleStart - start).count() / 60, chrono::duration_cast<chrono::seconds>(cycleStart - start).count() % 60);
 
       // 15 minutes exceeded! try to run one more RRR then exit!
       if (chrono::duration_cast<chrono::seconds>(cycleStart - start).count() > (MAX_RUNTIME_MINS * 60)) {
@@ -139,11 +139,10 @@ main(int argc, char **argv)
 	       chrono::duration_cast<chrono::seconds>(cycleEnd - start).count() % 60
 	       );
       } 
-      if ((useNetD == 0) || (useNetO == 0)){
-        if (RRR_cycles > 4){
-          stop_flag = 1;
-        }
-      }     
+
+      //if (RRR_cycles > 4){
+      //stop_flag = 1;
+      //}     
     } while (status > 0 && outOfTime == 0 && !stop_flag);
     
     if (status < 0) {
@@ -152,7 +151,7 @@ main(int argc, char **argv)
       release(rst);
       return 1;
     }
-  //}
+  }
 
   if (outOfTime) printf("STOPPING RRR: Out Of Time!\n");
   
