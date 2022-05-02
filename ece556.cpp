@@ -6,9 +6,10 @@
 #include <bits/stdc++.h>
 #include <cstdlib>
 #include <queue>
+#include <vector>
 #include "ece556.h"
 
-#define DEBUG 1      // general debug flag
+#define DEBUG 0      // general debug flag
 #define EDGE_DEBUG 0 // used to turn edgeDataDump on or off
 #define PROGRESS_DEBUG 1
 
@@ -420,6 +421,8 @@ int getNetCost(routingInst *rst, net &currNet)
     netCost += getSegWeight(rst, currNet.nroute.segments[i]);
   }
 
+  currNet.cost = netCost;
+
   return netCost;
 }
 
@@ -793,7 +796,18 @@ void RU(routingInst *rst, int netIndex)
     // for each edge update its utilization
     for (int k = 0; k < rst->nets[netIndex].nroute.segments[j].numEdges; ++k)
     {
-      rst->edgeUtils[rst->nets[netIndex].nroute.segments[j].edges[k]] -= 1; // decrement EDGE UTILIZATION
+      int currEdgeID = rst->nets[netIndex].nroute.segments[j].edges[k];
+
+      // update edge util
+      rst->edgeUtils[currEdgeID] -= 1; // decrement EDGE UTILIZATION
+
+      // update edge weight
+      int o_k1 = rst->edgeUtils[currEdgeID] - rst->edgeCaps[currEdgeID];
+      if (o_k1 < 0)
+        o_k1 = 0;
+
+      // w_k = o_k1 * h_k
+      rst->edgeWeights[currEdgeID] = o_k1 * rst->edgeHistories[currEdgeID];
     }
     // free the segment's edges array
     free(rst->nets[netIndex].nroute.segments[j].edges);
@@ -964,7 +978,7 @@ int RR(routingInst *rst, int netIndex, int iteration){
     printf("Failed to generate initial solution in RR\n");
   }
 
-  printf("Generated initial solution\n");
+  if (DEBUG) printf("Generated initial solution\n");
 
 
   int dx = iteration + 1;
@@ -1544,10 +1558,124 @@ int RR(routingInst *rst, int netIndex, int iteration){
           // iterate through edges in new_seg and increment ... ect
         }
       }
+      // (3.e) checking 'randomized staircase' shaped segment //
+      new_seg.numEdges = 0; // reset new_segment
+      int rand_num; // if 1-> move horixontal, if 0 -> move vertical
+      nxt_point = pin1; // initialize nxt_point to starting pin
+      for(int j=0; j<(xgap+ygap); ++j){
+        rand_num = rand() % 2;
+        curr_point = nxt_point;
+        // move vertical
+        if(rand_num == 0){
+          if (curr_point.y == pin2.y){ // already at max y value -> forced to move horizontally
+            if((pin2.x - pin1.x) > 0){
+              nxt_point.x = curr_point.x + 1;
+            } else{
+              nxt_point.x = curr_point.x - 1;
+            }
+            // check if valid edge
+            edgeID = getEdgeID(rst, curr_point, nxt_point);
+            if (edgeID != -1){
+              // store edge and increment the total number edges in temp segment
+              new_seg.edges[new_seg.numEdges] = edgeID;
+              new_seg.numEdges = new_seg.numEdges + 1;
+            } else {
+              printf("\nMove Horizontally but at max y: edge %d of %d", j, xgap+ygap);
+              printf("\nCurrpoint (%d,%d), Nextpoint (%d,%d)\n\n", curr_point.x, curr_point.y, nxt_point.x, nxt_point.y);
+              return -1; // tried to get invalid edge id --> out of bounds
+            }
+          } else { // move horizontally
+            if((pin2.y - pin1.y) > 0){
+              nxt_point.y = curr_point.y + 1;
+            } else{
+              nxt_point.y = curr_point.y - 1;
+            }
+            // check if valid edge
+            edgeID = getEdgeID(rst, curr_point, nxt_point);
+            if (edgeID != -1){
+              // store edge and increment the total number edges in temp segment
+              new_seg.edges[new_seg.numEdges] = edgeID;
+              new_seg.numEdges = new_seg.numEdges + 1;
+            } else {
+              printf("\nMove Horizontally: edge %d of %d", j, xgap+ygap);
+              printf("\nCurrpoint (%d,%d), Nextpoint (%d,%d)\n\n", curr_point.x, curr_point.y, nxt_point.x, nxt_point.y);
+              return -1; // tried to get invalid edge id --> out of bounds
+            }
+          }
+        }
+        // move horizontal
+        else { // rand==1
+          if (curr_point.x == pin2.x){ // already at max x value -> forced to move vertically
+            if((pin2.y - pin1.y) > 0){
+              nxt_point.y = curr_point.y + 1;
+            } else{
+              nxt_point.y = curr_point.y - 1;
+            }
+            // check if valid edge
+            edgeID = getEdgeID(rst, curr_point, nxt_point);
+            if (edgeID != -1){
+              // store edge and increment the total number edges in temp segment
+              new_seg.edges[new_seg.numEdges] = edgeID;
+              new_seg.numEdges = new_seg.numEdges + 1;
+            } else {
+              printf("\nMove Vertically but at max x: edge %d of %d", j, xgap+ygap);
+              printf("\nCurrpoint (%d,%d), Nextpoint (%d,%d)\n\n", curr_point.x, curr_point.y, nxt_point.x, nxt_point.y);
+              return -1; // tried to get invalid edge id --> out of bounds
+            }
+          } else { // move horizontally
+            if((pin2.x - pin1.x) > 0){
+              nxt_point.x = curr_point.x + 1;
+            } else{
+              nxt_point.x = curr_point.x - 1;
+            }
+            // check if valid edge
+            edgeID = getEdgeID(rst, curr_point, nxt_point);
+            if (edgeID != -1){
+              // store edge and increment the total number edges in temp segment
+              new_seg.edges[new_seg.numEdges] = edgeID;
+              new_seg.numEdges = new_seg.numEdges + 1;
+            } else {
+              printf("\nMove Vertically: edge %d of %d", j, xgap+ygap);
+              printf("\nCurrpoint (%d,%d), Nextpoint (%d,%d)\n\n", curr_point.x, curr_point.y, nxt_point.x, nxt_point.y);
+              return -1; // tried to get invalid edge id --> out of bounds
+            }
+          }
+        }
+      }
+      // compare total weight of this segment to curr solution -> replace if better
+      if(getSegWeight(rst, rst->nets[netIndex].nroute.segments[i]) > getSegWeight(rst, new_seg)){
+        rst->nets[netIndex].nroute.segments[i] = new_seg;
+      }
     }
   free(new_seg.edges);
   }
+
+  // for every segment of the net
+  for (int j = 0; j < rst->nets[netIndex].nroute.numSegs; ++j)
+  {
+    // for every edge of the segment
+    for (int k = 0; k < rst->nets[netIndex].nroute.segments[j].numEdges; ++k)
+    {
+      int currEdgeID = rst->nets[netIndex].nroute.segments[j].edges[k];
+
+      // update edge util
+      rst->edgeUtils[currEdgeID] += 1; // increment EDGE UTILIZATION
+
+      // update edge weight
+      int o_k1 = rst->edgeUtils[currEdgeID] - rst->edgeCaps[currEdgeID];
+      if (o_k1 < 0)
+        o_k1 = 0;
+
+      // w_k = o_k1 * h_k
+      rst->edgeWeights[currEdgeID] = o_k1 * rst->edgeHistories[currEdgeID];
+    }
+  }
+
   return 0;
+}
+
+bool netComp(net i, net j) {
+  return (i.cost > j.cost); // higher cost gets sorted to the lef
 }
 
 // Perform RRR on the given routing instance
@@ -1562,11 +1690,13 @@ int RRR(routingInst *rst, int useNetO, int iteration)
   int nonzeroNets = 0;
   for (int i = 0; i < rst->numNets; ++i)
   {
-    if (getNetCost(rst, rst->nets[i]) > 0)
+    if (getNetCost(rst, rst->nets[i]) > 0) // updates all net "cost" fields while it iterates!
     {
       ++nonzeroNets;
     }
   }
+
+  if (PROGRESS_DEBUG) printf("RRR: Counted %d non-zero nets\n",nonzeroNets);
 
   int netOrder[nonzeroNets];
   for (int i = 0; i < nonzeroNets; ++i)
@@ -1575,7 +1705,21 @@ int RRR(routingInst *rst, int useNetO, int iteration)
   // determine net ordering (needs w_k !!)
   if (useNetO)
   {
-    getNetOrder(rst, netOrder); // will only RRR nets with non-zero cost
+    //getNetOrder(rst, netOrder); // will only RRR nets with non-zero cost
+
+    if (PROGRESS_DEBUG) printf("RRR: Ordering nets...\n");
+
+    vector<net> netOrderVector(rst->nets, rst->nets + rst->numNets);
+
+    sort(netOrderVector.begin(), netOrderVector.end(), netComp);
+
+    for (int i=0; i<rst->numNets; ++i) {
+      rst->nets[i] = netOrderVector.at(i);
+    }
+
+    for (int i=0; i<nonzeroNets; ++i) netOrder[i] = i;
+
+    if (PROGRESS_DEBUG) printf("RRR: Done ordering nets!\n");
   }
   else
   {
@@ -1592,16 +1736,15 @@ int RRR(routingInst *rst, int useNetO, int iteration)
   // Rip Up
   for (int i = 0; i < nonzeroNets; ++i)
   {
-    printf("RIPPING UP NET %d/%d... ID = %d\n", i, nonzeroNets-1, netOrder[i]);
+    if (PROGRESS_DEBUG) printf("RU/RR ON NET %d/%d... ID = %d\r", i+1, nonzeroNets, rst->nets[netOrder[i]].id);
+    fflush(stdout);
     RU(rst, netOrder[i]);
 
-    printf("REROUTING...\n");
+    //printf("REROUTING...\n");
     int check = RR(rst, netOrder[i], iteration);
     if (check == -1){
-      printf("PROBLEM WITH RR -> RETURNED -1");
+      printf("\nPROBLEM WITH RR -> RETURNED -1\n");
     }
-    if (PROGRESS_DEBUG)
-      printf("\n");
 
    // if (getTotalCost(rst) == 0)
    //   break;
@@ -1609,6 +1752,9 @@ int RRR(routingInst *rst, int useNetO, int iteration)
     //updateEdgeUtils(rst); <- NOTE: this can be replaced
     //updateEdgeWeights(rst);
   }
+
+  if (PROGRESS_DEBUG)
+      printf("\n");
 
   // UPDATE EDGE UTILS AFTER RU (weights should NOT be updated ??? otherwise w_k would be a function of o_k instead of o_k1
   // updateEdgeUtils(rst); // re-route will create new edges
@@ -1618,10 +1764,10 @@ int RRR(routingInst *rst, int useNetO, int iteration)
   // RR(rst, netOrder, nonzeroNets);
 
   // update values
-  updateEdgeUtils(rst); //<- NOTE: keep track of while you optimize segments
-  updateEdgeWeights(rst);
+  //updateEdgeUtils(rst); // NOTE: should do this this in RU and RR every time you update an edge, DONT update the entire grid
+  //updateEdgeWeights(rst); // NOTE: should do this this in RU and RR every time you update an edge, DONT update the entire grid
 
-  int totalCost = getTotalCost(rst);
+  int totalCost = getTotalCost(rst); // updates all net "cost" fields!
   printf("RR solution cost: %d\n", totalCost);
 
   // update edgeUtils and edgeWeights before returning a cost function (???)
