@@ -11,6 +11,7 @@
 #define ASCII_ZERO 48
 #define MAX_RUNTIME_MINS 15
 #define MAX_PENALIZED_RUNTIME_MINS 15
+#define NUM_CYCLES 10
 
 // CITED RESOURCES:
 // Command Line Parsing - https://www.gnu.org/software/libc/manual/html_node/Example-of-Getopt.html
@@ -143,7 +144,7 @@ main(int argc, char **argv)
       //if (RRR_cycles > 4){
       //stop_flag = 1;
       //}     
-    } while (status > 0 && outOfTime == 0 && !stop_flag);
+    } while (status > 0 && outOfTime == 0 && !stop_flag && (RRR_cycles <= NUM_CYCLES));
     
     if (status < 0) {
       printf("Num Cycles: %d\n", RRR_cycles);
