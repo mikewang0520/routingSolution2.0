@@ -955,6 +955,8 @@ int generateInitialSolution(routingInst *rst, int netIndex){
 }
 
 int RR(routingInst *rst, int netIndex, int iteration){
+  srand(20);
+	
   if(DEBUG){
     printf("Starting RR...\n");
   }
