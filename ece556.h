@@ -108,7 +108,6 @@ int solveRouting(routingInst *rst);
 
 /* in getEdgeWeight(routingInst *rst, int edgeID)
    Calculates the weight of an edge given its ID
-
    input1: pointer to the routing instance
    input2: edge ID
    output: weight of the edge
@@ -119,7 +118,6 @@ int getEdgeWeight(routingInst *rst, int edgeID);
 /* int getSegWeight(routingInst *rst, segment currSeg)
    This function calculates the cost of a segment by
    summing the weight of each edge.
-
    input1: pointer to the routing instance
    input2: current segment
    output: cost of the current segment
@@ -129,7 +127,6 @@ int getSegWeight(routingInst *rst, segment &currSeg);
 
 /* int getNetCost(routingInst *rst, net currNet)
    This function calculates the cost of a single net.
-
    input1: pointer to the routing instance
    input2: a net (NOT a pointer!!)
    output: cost of the net
@@ -140,7 +137,6 @@ int getNetCost(routingInst *rst, net &currNet);
 /* int getTotalCost(routingInst *rst)
    This function calculates the total cost of the
    routing solution.
-
    input1: pointer to the routing instance
    output: total cost of the routing instance
 */
@@ -151,7 +147,6 @@ int getTotalCost(routingInst *rst);
    This function calculates net costs that need to be
    ripped up and re-routed (i.e. cost != 0) and returns
    an ORDERED int array of the nets that will be re-routed.
-
    input1: pointer to the routing instance
    output: ORDERED int array of nets that will be re-routed
 */
@@ -160,14 +155,13 @@ int* getNetOrder(routingInst *rst);
 
 /* void decomp(routingInst *rst)
    Net decomposition of all pins in all nets.
-
    input1: pointer to the routing instance
    output: doesn't return anything - rather, directy updates the nets and their pin ordering in rst
 */
 void decomp(routingInst *rst);
 
 
-/* int RRR(routingInst *rst, int useNetO, int iteration)
+/* int RRR(routingInst *rst, int useNetO, int iteration, int seed)
    Performs one iteration of "Rip-up and ReRoute".
    
    Calls "getNetOrder()" if using net ordering, otherwise
@@ -177,9 +171,10 @@ void decomp(routingInst *rst);
    input1: pointer to the routing instance
    input2: use net ordering if 1
    input3: current RRR iteration number
+   input4: seed
    output: total cost of re-routed routing instance (use getTotalCost(rst))
 */
-int RRR(routingInst *rst, int useNetO, int iteration);
+int RRR(routingInst *rst, int useNetO, int iteration, int seed);
 
 
 /* int writeOutput(const char *outRouteFile, routingInst *rst)
