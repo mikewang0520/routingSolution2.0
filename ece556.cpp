@@ -968,9 +968,8 @@ int generateInitialSolution(routingInst *rst, int netIndex){
   return 1; // success!
 }
 
-int RR(routingInst *rst, int netIndex, int iteration){
-  srand(20);
-	
+int RR(routingInst *rst, int netIndex, int iteration, int seed){
+  srand(seed);
   if(DEBUG){
     printf("Starting RR...\n");
   }
@@ -1681,7 +1680,7 @@ bool netComp(net i, net j) {
 }
 
 // Perform RRR on the given routing instance
-int RRR(routingInst *rst, int useNetO, int iteration)
+int RRR(routingInst *rst, int useNetO, int iteration, int seed)
 {
   // UPDATE EDGE HISTORIES HERE
   updateEdgeUtils(rst);     // "sets" on first iteration (calc u_k1)
@@ -1743,7 +1742,7 @@ int RRR(routingInst *rst, int useNetO, int iteration)
     RU(rst, netOrder[i]);
 
     //printf("REROUTING...\n");
-    int check = RR(rst, netOrder[i], iteration);
+    int check = RR(rst, netOrder[i], iteration, seed);
     if (check == -1){
       printf("\nPROBLEM WITH RR -> RETURNED -1\n");
     }
